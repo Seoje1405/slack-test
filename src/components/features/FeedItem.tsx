@@ -15,24 +15,18 @@ export function FeedItem({ item, accentColor, showServiceBadge = false }: FeedIt
   const isFav = useFeedAnnotationStore((s) => !!s.favorites[item.id]);
   const toggleFavorite = useFeedAnnotationStore((s) => s.toggleFavorite);
 
-  const handleClick = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('[data-action]')) return;
-    if (item.url) window.open(item.url, '_blank', 'noopener,noreferrer');
-  };
-
   const serviceConfig = SERVICE_MAP[item.service];
+
+  const Tag = item.url ? 'a' : 'div';
+  const linkProps = item.url
+    ? { href: item.url, target: '_blank', rel: 'noopener noreferrer' }
+    : {};
 
   return (
     <div className="group px-4 py-2">
-      <div
-        className={`flex items-start gap-3 rounded-lg px-2 py-2 transition-colors cursor-pointer hover:bg-[var(--bg-overlay)] ${isFav ? 'bg-[var(--bg-overlay)]' : ''}`}
-        onClick={handleClick}
-        role={item.url ? 'link' : undefined}
-        tabIndex={item.url ? 0 : undefined}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !(e.target as HTMLElement).closest('[data-action]'))
-            handleClick(e as unknown as React.MouseEvent);
-        }}
+      <Tag
+        {...linkProps}
+        className={`flex items-start gap-3 rounded-lg px-2 py-2 transition-colors ${item.url ? 'cursor-pointer' : ''} hover:bg-[var(--bg-overlay)] ${isFav ? 'bg-[var(--bg-overlay)]' : ''}`}
       >
         {/* 아바타 */}
         <div className="flex-shrink-0 mt-0.5 relative">
@@ -90,7 +84,7 @@ export function FeedItem({ item, accentColor, showServiceBadge = false }: FeedIt
         >
           <button
             data-action
-            onClick={(e) => { e.stopPropagation(); toggleFavorite(item.id); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(item.id); }}
             className="p-1 rounded transition-colors hover:bg-[var(--bg-elevated)]"
             title={isFav ? '즐겨찾기 해제' : '즐겨찾기'}
           >
@@ -102,7 +96,7 @@ export function FeedItem({ item, accentColor, showServiceBadge = false }: FeedIt
         <span className="flex-shrink-0 text-xs text-[var(--text-muted)] font-mono mt-0.5 group-hover:hidden">
           {timeAgo(item.time)}
         </span>
-      </div>
+      </Tag>
     </div>
   );
 }
