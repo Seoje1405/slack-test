@@ -1,11 +1,3 @@
-import { config } from 'dotenv';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-// 로컬 개발 시 .env.local 로드 (Railway에서는 대시보드 환경변수 사용)
-const __dirname = dirname(fileURLToPath(import.meta.url));
-config({ path: resolve(__dirname, '..', '.env.local') });
-
 import {
   Client,
   Events,
