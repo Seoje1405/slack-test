@@ -1,5 +1,6 @@
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { Topbar } from '@/components/layouts/Topbar';
+import { MeetingPanel } from '@/components/features/MeetingPanel';
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default function DashboardLayout({
         <Topbar />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
+      <MeetingPanel />
     </div>
   );
 }

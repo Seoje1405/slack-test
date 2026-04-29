@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDashboardStore } from '@/stores/dashboardStore';
+import { cn } from '@/lib/utils';
 import type { FeedItem, FeedResponse } from '@/types/feed';
 
 const SERVICE_KEYS = ['github', 'notion', 'discord', 'figma'] as const;
@@ -30,14 +31,12 @@ export function MeetingPanel() {
   const handleGenerate = async () => {
     const events = collectEvents(queryClient);
     if (events.length === 0) {
-      setError('No feed data available yet. Try refreshing the dashboard first.');
+      setError('피드 데이터가 없습니다. 먼저 새로고침을 해주세요.');
       return;
     }
-
     setSummary('');
     setError('');
     setLoading(true);
-
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -49,16 +48,13 @@ export function MeetingPanel() {
         body: JSON.stringify({ events }),
         signal: controller.signal,
       });
-
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        setError(json.error ?? `Error ${res.status}`);
+        setError(json.error ?? `오류 ${res.status}`);
         return;
       }
-
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -66,7 +62,7 @@ export function MeetingPanel() {
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        setError((err as Error).message ?? 'Unknown error');
+        setError((err as Error).message ?? '알 수 없는 오류');
       }
     } finally {
       setLoading(false);
@@ -81,72 +77,78 @@ export function MeetingPanel() {
     toggleMeetingMode();
   };
 
-  if (!meetingMode) return null;
-
   return (
-    <div className="rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-sm font-semibold text-[var(--text-primary)]">Meeting Mode</span>
+    <aside
+      className={cn(
+        'flex-shrink-0 bg-[var(--bg-surface)] border-l border-[var(--border-subtle)] flex flex-col h-full overflow-hidden transition-[width] duration-300',
+        meetingMode ? 'w-[340px]' : 'w-0'
+      )}
+    >
+      <div className="w-[340px] flex flex-col h-full">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border-subtle)] flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-sm font-semibold text-[var(--text-primary)]">회의 모드</span>
+          </div>
+          <button
+            onClick={handleClose}
+            className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors text-lg leading-none"
+            aria-label="닫기"
+          >
+            ×
+          </button>
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* 생성 버튼 */}
+        <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
           <button
             onClick={handleGenerate}
             disabled={loading}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-[var(--accent-default)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="w-full flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-[var(--accent-default)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {loading ? (
               <>
                 <span className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" />
-                Generating…
+                생성 중…
               </>
             ) : (
-              'Generate Agenda'
+              '아젠다 생성'
             )}
           </button>
-          <button
-            onClick={handleClose}
-            className="text-xs px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-overlay)] transition-colors"
-          >
-            Close
-          </button>
+        </div>
+
+        {/* 콘텐츠 */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+
+          {!summary && !loading && !error && (
+            <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">
+              "아젠다 생성"을 눌러 최근 팀 활동을 기반으로 회의 아젠다를 만들어보세요.
+            </p>
+          )}
+
+          {summary && <PanelMarkdown content={summary} />}
         </div>
       </div>
-
-      <div className="p-4 min-h-[120px]">
-        {error && (
-          <p className="text-xs text-red-500 mb-2">{error}</p>
-        )}
-
-        {!summary && !loading && !error && (
-          <p className="text-sm text-[var(--text-tertiary)]">
-            Click &ldquo;Generate Agenda&rdquo; to create a meeting summary from your recent team activity.
-          </p>
-        )}
-
-        {summary && (
-          <MarkdownRenderer content={summary} />
-        )}
-      </div>
-    </div>
+    </aside>
   );
 }
 
-function MarkdownRenderer({ content }: { content: string }) {
+function PanelMarkdown({ content }: { content: string }) {
   const lines = content.split('\n');
-
   return (
-    <div className="text-sm text-[var(--text-primary)] space-y-1 leading-relaxed">
+    <div className="text-xs text-[var(--text-primary)] space-y-1 leading-relaxed">
       {lines.map((line, i) => {
         if (line.startsWith('## ') || line.startsWith('### ')) {
-          const text = line.replace(/^#{2,3}\s/, '');
-          const bold = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          const text = line
+            .replace(/^#{2,3}\s/, '')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           return (
             <h3
               key={i}
-              className="font-semibold text-[var(--text-primary)] mt-4 first:mt-0"
-              dangerouslySetInnerHTML={{ __html: bold }}
+              className="font-semibold text-[var(--text-primary)] mt-3 first:mt-0"
+              dangerouslySetInnerHTML={{ __html: text }}
             />
           );
         }
@@ -158,12 +160,13 @@ function MarkdownRenderer({ content }: { content: string }) {
           );
         }
         if (line.startsWith('- ') || line.startsWith('* ')) {
-          const text = line.replace(/^[-*]\s/, '');
-          const bold = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          const text = line
+            .replace(/^[-*]\s/, '')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           return (
-            <div key={i} className="flex gap-2">
+            <div key={i} className="flex gap-1.5">
               <span className="text-[var(--text-tertiary)] shrink-0">•</span>
-              <span dangerouslySetInnerHTML={{ __html: bold }} />
+              <span dangerouslySetInnerHTML={{ __html: text }} />
             </div>
           );
         }
@@ -176,9 +179,7 @@ function MarkdownRenderer({ content }: { content: string }) {
         }
         if (line.trim() === '') return <div key={i} className="h-1" />;
         const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        return (
-          <p key={i} dangerouslySetInnerHTML={{ __html: bold }} />
-        );
+        return <p key={i} dangerouslySetInnerHTML={{ __html: bold }} />;
       })}
     </div>
   );
