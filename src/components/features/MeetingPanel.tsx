@@ -81,10 +81,10 @@ export function MeetingPanel() {
     <aside
       className={cn(
         'flex-shrink-0 bg-[var(--bg-surface)] border-l border-[var(--border-subtle)] flex flex-col h-full overflow-hidden transition-[width] duration-300',
-        meetingMode ? 'w-[340px]' : 'w-0'
+        meetingMode ? 'w-[420px]' : 'w-0'
       )}
     >
-      <div className="w-[340px] flex flex-col h-full">
+      <div className="w-[420px] flex flex-col h-full">
         {/* 헤더 */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border-subtle)] flex-shrink-0">
           <div className="flex items-center gap-2">
