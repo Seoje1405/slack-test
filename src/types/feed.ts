@@ -23,3 +23,18 @@ export interface FeedResponse {
   status: ServiceStatus;
   message?: string;
 }
+
+export interface TaskFrequency {
+  type: string;
+  count: number;
+}
+
+export interface ContributorEntry {
+  user: string;
+  count: number;
+}
+
+export interface StatsData {
+  taskFrequency: TaskFrequency[];
+  topContributors: ContributorEntry[];
+}
