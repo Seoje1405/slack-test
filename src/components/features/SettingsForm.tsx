@@ -47,8 +47,8 @@ const SERVICE_FIELDS: Record<string, ServiceTokenConfig> = {
         helpUrl: 'https://discord.com/developers/applications',
       },
       {
-        name: 'DISCORD_CHANNEL_ID',
-        label: 'Channel ID',
+        name: 'DISCORD_GUILD_ID',
+        label: 'Guild(서버) ID (선택)',
         placeholder: '000000000000000000',
         helpUrl: 'https://discord.com/developers/applications',
       },
@@ -157,6 +157,32 @@ function NotionModeSelector() {
   );
 }
 
+function DiscordBotGuide() {
+  return (
+    <div className="flex flex-col gap-3 pb-4 border-b border-[var(--border-subtle)]">
+      <p className="text-xs font-medium text-[var(--text-secondary)]">Gateway 봇 설정</p>
+      <div className="rounded-lg bg-[var(--bg-overlay)] border border-[var(--border-subtle)] p-3 flex flex-col gap-2">
+        <p className="text-xs text-[var(--text-muted)]">
+          채팅·음성 입퇴장·멘션·멤버 변동 등 서버 전체 활동을 수신하려면 별도 봇 프로세스가 필요합니다.
+        </p>
+        <div className="flex flex-col gap-1">
+          <p className="text-xs text-[var(--text-secondary)] font-medium">1. Discord Developer Portal에서 Privileged Intents 활성화</p>
+          <p className="text-xs text-[var(--text-muted)] pl-3">Bot → Privileged Gateway Intents → SERVER MEMBERS, MESSAGE CONTENT 켜기</p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <p className="text-xs text-[var(--text-secondary)] font-medium">2. 봇 실행</p>
+          <code className="text-xs font-mono bg-[var(--bg-elevated)] px-2 py-1 rounded text-[var(--accent-light)]">
+            pnpm bot:dev
+          </code>
+        </div>
+        <p className="text-xs text-[var(--text-muted)]">
+          봇이 실행 중이면 이벤트가 <code className="font-mono">bot/events.json</code>에 저장되어 대시보드에 표시됩니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsForm() {
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
@@ -188,6 +214,7 @@ export function SettingsForm() {
             </div>
             <div className="p-5 flex flex-col gap-4">
               {svc.id === 'notion' && <NotionModeSelector />}
+              {svc.id === 'discord' && <DiscordBotGuide />}
               {config.fields.map((field) => (
                 <div key={field.name} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
@@ -231,9 +258,9 @@ GITHUB_REPO=owner/repo
 NOTION_TOKEN=secret_xxxxxxxxxxxxxxxxxxxx
 NOTION_DATABASE_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # database 모드 기본값
 
-# Discord
+# Discord (Gateway 봇)
 DISCORD_BOT_TOKEN=MTxxxxxxxxxxxxxxxxxxxxxxxxxx
-DISCORD_CHANNEL_ID=000000000000000000
+DISCORD_GUILD_ID=000000000000000000  # 선택: 특정 서버만 수신
 
 # Figma
 FIGMA_TOKEN=figd_xxxxxxxxxxxxxxxxxxxx
