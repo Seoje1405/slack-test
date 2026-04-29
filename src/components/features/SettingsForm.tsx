@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { SERVICES } from '@/config/services';
 import { useNotionSettingsStore } from '@/stores/notionSettingsStore';
 import type { NotionMode } from '@/stores/notionSettingsStore';
+import { useGitHubSettingsStore } from '@/stores/githubSettingsStore';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface ServiceTokenConfig {
@@ -19,12 +20,6 @@ const SERVICE_FIELDS: Record<string, ServiceTokenConfig> = {
         label: 'Personal Access Token',
         placeholder: 'ghp_xxxxxxxxxxxxxxxxxxxx',
         helpUrl: 'https://github.com/settings/tokens/new',
-      },
-      {
-        name: 'GITHUB_REPO',
-        label: 'Repository (선택)',
-        placeholder: 'owner/repo',
-        helpUrl: 'https://github.com',
       },
     ],
   },
@@ -71,6 +66,86 @@ const SERVICE_FIELDS: Record<string, ServiceTokenConfig> = {
     ],
   },
 };
+
+const REPO_PALETTE = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+function getRepoColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+  return REPO_PALETTE[h % REPO_PALETTE.length];
+}
+
+function GitHubReposManager() {
+  const repos = useGitHubSettingsStore((s) => s.repos);
+  const setRepos = useGitHubSettingsStore((s) => s.setRepos);
+  const queryClient = useQueryClient();
+  const [input, setInput] = useState('');
+
+  function addRepo() {
+    const val = input.trim();
+    if (!val || repos.includes(val)) { setInput(''); return; }
+    const next = [...repos, val];
+    setRepos(next);
+    queryClient.invalidateQueries({ queryKey: ['feed', 'github'] });
+    setInput('');
+  }
+
+  function removeRepo(repo: string) {
+    setRepos(repos.filter((r) => r !== repo));
+    queryClient.invalidateQueries({ queryKey: ['feed', 'github'] });
+  }
+
+  return (
+    <div className="flex flex-col gap-3 pb-4 border-b border-[var(--border-subtle)]">
+      <p className="text-xs font-medium text-[var(--text-secondary)]">모니터링 레포지토리</p>
+
+      {repos.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {repos.map((repo) => {
+            const shortName = repo.split('/').pop() ?? repo;
+            const color = getRepoColor(shortName);
+            return (
+              <span
+                key={repo}
+                className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-full"
+                style={{ color, background: `${color}20`, border: `1px solid ${color}40` }}
+              >
+                {repo}
+                <button
+                  onClick={() => removeRepo(repo)}
+                  className="opacity-60 hover:opacity-100 transition-opacity leading-none"
+                  title="제거"
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addRepo()}
+          placeholder="owner/repo-name"
+          className="flex-1 text-xs font-mono bg-[var(--bg-overlay)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--github)]"
+        />
+        <button
+          onClick={addRepo}
+          className="px-3 py-2 text-xs rounded-lg bg-[var(--github)] text-white hover:opacity-90 transition-opacity font-medium"
+        >
+          추가
+        </button>
+      </div>
+
+      <p className="text-xs text-[var(--text-muted)]">
+        레포 미설정 시 <code className="font-mono">GITHUB_REPOS</code> 환경변수(쉼표 구분)를 사용합니다.
+      </p>
+    </div>
+  );
+}
 
 function NotionModeSelector() {
   const mode = useNotionSettingsStore((s) => s.mode);
@@ -225,6 +300,7 @@ export function SettingsForm() {
               </h2>
             </div>
             <div className="p-5 flex flex-col gap-4">
+              {svc.id === 'github' && <GitHubReposManager />}
               {svc.id === 'notion' && <NotionModeSelector />}
               {svc.id === 'discord' && <DiscordBotGuide />}
               {config.fields.map((field) => (
@@ -264,7 +340,7 @@ export function SettingsForm() {
         <pre className="text-xs font-mono text-[var(--text-secondary)] bg-[var(--bg-overlay)] rounded-lg p-4 overflow-x-auto whitespace-pre leading-relaxed">
 {`# GitHub
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
-GITHUB_REPO=owner/repo
+GITHUB_REPOS=owner/frontend,owner/backend  # 쉼표로 여러 레포 구분
 
 # Notion
 NOTION_TOKEN=secret_xxxxxxxxxxxxxxxxxxxx

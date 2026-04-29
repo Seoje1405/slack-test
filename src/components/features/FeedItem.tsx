@@ -13,6 +13,32 @@ interface FeedItemProps {
   showServiceBadge?: boolean;
 }
 
+const REPO_PALETTE = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+
+function getRepoColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+  return REPO_PALETTE[h % REPO_PALETTE.length];
+}
+
+function GitHubTagBadge({ tag }: { tag: string }) {
+  const parts = tag.split(' · ');
+  const repoName = parts[0];
+  const rest = parts.slice(1).join(' · ');
+  const color = getRepoColor(repoName);
+  return (
+    <>
+      <span
+        className="text-xs px-1.5 py-0.5 rounded font-mono font-semibold"
+        style={{ color, background: `${color}22` }}
+      >
+        {repoName}
+      </span>
+      {rest && <span className="text-xs text-[var(--text-muted)] font-mono">{rest}</span>}
+    </>
+  );
+}
+
 export function FeedItem({ item, accentColor, showServiceBadge = false }: FeedItemProps) {
   const isFav = useFeedAnnotationStore((s) => !!s.favorites[item.id]);
   const toggleFavorite = useFeedAnnotationStore((s) => s.toggleFavorite);
@@ -61,16 +87,22 @@ export function FeedItem({ item, accentColor, showServiceBadge = false }: FeedIt
               {serviceConfig.label}
             </span>
           )}
-          {item.tag && !showServiceBadge && (
-            <span
-              className="text-xs px-1.5 py-0.5 rounded font-mono"
-              style={{ color: accentColor, background: `${accentColor}18` }}
-            >
-              {item.tag}
-            </span>
-          )}
-          {item.tag && showServiceBadge && (
-            <span className="text-xs text-[var(--text-muted)]">{item.tag}</span>
+          {item.service === 'github' && item.tag ? (
+            <GitHubTagBadge tag={item.tag} />
+          ) : (
+            <>
+              {item.tag && !showServiceBadge && (
+                <span
+                  className="text-xs px-1.5 py-0.5 rounded font-mono"
+                  style={{ color: accentColor, background: `${accentColor}18` }}
+                >
+                  {item.tag}
+                </span>
+              )}
+              {item.tag && showServiceBadge && (
+                <span className="text-xs text-[var(--text-muted)]">{item.tag}</span>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -17,20 +17,25 @@ interface GitHubEvent {
 function extractTitle(event: GitHubEvent): { title: string; tag: string | null; url: string | null } {
   const payload = event.payload;
   const repoUrl = `https://github.com/${event.repo.name}`;
+  const repoShortName = event.repo.name.split('/').pop() ?? event.repo.name;
+
+  function t(action: string): string {
+    return `${repoShortName} · ${action}`;
+  }
 
   switch (event.type) {
     case 'PushEvent': {
       const commits = payload.commits as Array<{ message: string }> | undefined;
       const branch = (payload.ref as string | undefined)?.replace('refs/heads/', '') ?? '';
       const message = commits?.[commits.length - 1]?.message ?? 'Push';
-      return { title: message.split('\n')[0], tag: `Push · ${branch}`, url: repoUrl };
+      return { title: message.split('\n')[0], tag: t(`Push · ${branch}`), url: repoUrl };
     }
     case 'PullRequestEvent': {
       const pr = payload.pull_request as { title: string; html_url: string } | undefined;
       const action = payload.action as string;
       return {
         title: `PR ${action}: ${pr?.title ?? ''}`,
-        tag: 'PR',
+        tag: t('PR'),
         url: pr?.html_url ?? repoUrl,
       };
     }
@@ -39,7 +44,7 @@ function extractTitle(event: GitHubEvent): { title: string; tag: string | null; 
       const action = payload.action as string;
       return {
         title: `이슈 ${action}: ${issue?.title ?? ''}`,
-        tag: 'Issue',
+        tag: t('Issue'),
         url: issue?.html_url ?? repoUrl,
       };
     }
@@ -48,7 +53,7 @@ function extractTitle(event: GitHubEvent): { title: string; tag: string | null; 
       const ref = payload.ref as string | null;
       return {
         title: `${refType} 생성: ${ref ?? event.repo.name}`,
-        tag: 'Create',
+        tag: t('Create'),
         url: repoUrl,
       };
     }
@@ -56,14 +61,14 @@ function extractTitle(event: GitHubEvent): { title: string; tag: string | null; 
       const release = payload.release as { tag_name: string; html_url: string } | undefined;
       return {
         title: `릴리즈: ${release?.tag_name ?? ''}`,
-        tag: 'Release',
+        tag: t('Release'),
         url: release?.html_url ?? repoUrl,
       };
     }
     default: {
       return {
         title: event.type.replace('Event', ''),
-        tag: null,
+        tag: t(event.type.replace('Event', '')),
         url: repoUrl,
       };
     }
