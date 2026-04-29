@@ -9,7 +9,10 @@ export function Topbar() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ['feed'] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['feed'] }),
+      queryClient.invalidateQueries({ queryKey: ['stats'] }),
+    ]);
     setTimeout(() => setRefreshing(false), 600);
   };
 
