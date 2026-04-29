@@ -2,14 +2,16 @@
 
 import { timeAgo } from '@/lib/utils';
 import { useFeedAnnotationStore } from '@/stores/feedAnnotationStore';
+import { SERVICE_MAP } from '@/config/services';
 import type { FeedItem as FeedItemType } from '@/types/feed';
 
 interface FeedItemProps {
   item: FeedItemType;
   accentColor: string;
+  showServiceBadge?: boolean;
 }
 
-export function FeedItem({ item, accentColor }: FeedItemProps) {
+export function FeedItem({ item, accentColor, showServiceBadge = false }: FeedItemProps) {
   const isFav = useFeedAnnotationStore((s) => !!s.favorites[item.id]);
   const toggleFavorite = useFeedAnnotationStore((s) => s.toggleFavorite);
 
@@ -17,6 +19,8 @@ export function FeedItem({ item, accentColor }: FeedItemProps) {
     if ((e.target as HTMLElement).closest('[data-action]')) return;
     if (item.url) window.open(item.url, '_blank', 'noopener,noreferrer');
   };
+
+  const serviceConfig = SERVICE_MAP[item.service];
 
   return (
     <div className="group px-4 py-2">
@@ -31,7 +35,7 @@ export function FeedItem({ item, accentColor }: FeedItemProps) {
         }}
       >
         {/* 아바타 */}
-        <div className="flex-shrink-0 mt-0.5">
+        <div className="flex-shrink-0 mt-0.5 relative">
           {item.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={item.avatarUrl} alt={item.user} className="w-7 h-7 rounded-full object-cover" />
@@ -43,6 +47,13 @@ export function FeedItem({ item, accentColor }: FeedItemProps) {
               {item.user.charAt(0).toUpperCase()}
             </div>
           )}
+          {showServiceBadge && (
+            <span
+              className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border border-[var(--bg-elevated)] flex items-center justify-center"
+              style={{ background: serviceConfig.color }}
+              title={serviceConfig.label}
+            />
+          )}
         </div>
 
         {/* 내용 */}
@@ -50,13 +61,24 @@ export function FeedItem({ item, accentColor }: FeedItemProps) {
           <p className="text-sm text-[var(--text-primary)] leading-snug truncate">{item.title}</p>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-xs text-[var(--text-muted)]">{item.user}</span>
-            {item.tag && (
+            {showServiceBadge && (
+              <span
+                className="text-xs px-1.5 py-0.5 rounded font-mono"
+                style={{ color: serviceConfig.color, background: `${serviceConfig.color}18` }}
+              >
+                {serviceConfig.label}
+              </span>
+            )}
+            {item.tag && !showServiceBadge && (
               <span
                 className="text-xs px-1.5 py-0.5 rounded font-mono"
                 style={{ color: accentColor, background: `${accentColor}18` }}
               >
                 {item.tag}
               </span>
+            )}
+            {item.tag && showServiceBadge && (
+              <span className="text-xs text-[var(--text-muted)]">{item.tag}</span>
             )}
           </div>
         </div>

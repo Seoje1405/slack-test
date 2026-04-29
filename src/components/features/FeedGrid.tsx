@@ -5,14 +5,20 @@ import { useDashboardStore } from '@/stores/dashboardStore';
 import { SERVICES } from '@/config/services';
 import type { ServiceId } from '@/types/feed';
 import { FeedPanel } from './FeedPanel';
+import { UnifiedFeedPanel } from './UnifiedFeedPanel';
 
 export function FeedGrid() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const activeFilter = useDashboardStore((s) => s.activeFilter);
+  const viewMode = useDashboardStore((s) => s.viewMode);
 
   if (!mounted) return <FeedGridSkeleton />;
+
+  if (viewMode === 'unified') {
+    return <UnifiedFeedPanel />;
+  }
 
   const services: ServiceId[] = activeFilter
     ? [activeFilter]
