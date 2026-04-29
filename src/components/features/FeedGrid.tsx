@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useDashboardStore } from '@/stores/dashboardStore';
 import { SERVICES } from '@/config/services';
 import type { ServiceId } from '@/types/feed';
@@ -27,11 +28,7 @@ export function FeedGrid() {
   const isExpanded = services.length === 1;
 
   return (
-    <div
-      className={`grid gap-4 ${
-        isExpanded ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'
-      }`}
-    >
+    <div className={cn('grid gap-4', isExpanded ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2')}>
       {services.map((service) => (
         <FeedPanel key={service} service={service} expanded={isExpanded} />
       ))}

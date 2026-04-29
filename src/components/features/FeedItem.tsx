@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { timeAgo } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useFeedAnnotationStore } from '@/stores/feedAnnotationStore';
 import { SERVICE_MAP } from '@/config/services';
 import type { FeedItem as FeedItemType } from '@/types/feed';
@@ -17,7 +18,11 @@ export function FeedItem({ item, accentColor, showServiceBadge = false }: FeedIt
   const toggleFavorite = useFeedAnnotationStore((s) => s.toggleFavorite);
 
   const serviceConfig = SERVICE_MAP[item.service];
-  const innerClass = `flex items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-[var(--bg-overlay)] ${item.url ? 'cursor-pointer' : ''} ${isFav ? 'bg-[var(--bg-overlay)]' : ''}`;
+  const innerClass = cn(
+    'flex items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-[var(--bg-overlay)]',
+    item.url && 'cursor-pointer',
+    isFav && 'bg-[var(--bg-overlay)]'
+  );
 
   const content = (
     <>

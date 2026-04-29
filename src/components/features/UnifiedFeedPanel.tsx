@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { useGitHubFeed } from '@/hooks/useGitHubFeed';
 import { useNotionFeed } from '@/hooks/useNotionFeed';
 import { useDiscordFeed } from '@/hooks/useDiscordFeed';
@@ -57,8 +58,6 @@ export function UnifiedFeedPanel() {
           {!isLoading && (
             <span className="text-xs text-[var(--text-muted)] font-mono">{filteredItems.length}</span>
           )}
-
-          {/* 서비스 필터 칩 */}
           <div className="flex items-center gap-1">
             {SERVICES.map((svc) => {
               const active = serviceFilter === svc.id;
@@ -69,12 +68,13 @@ export function UnifiedFeedPanel() {
                     setServiceFilter(active ? null : svc.id);
                     setVisibleCount(INITIAL_LIMIT);
                   }}
-                  className="text-xs px-2 py-0.5 rounded-full transition-colors font-mono"
-                  style={
+                  className={cn(
+                    'text-xs px-2 py-0.5 rounded-full transition-colors font-mono',
                     active
-                      ? { background: svc.color, color: '#fff' }
-                      : { color: 'var(--text-muted)', border: '1px solid var(--border-default)' }
-                  }
+                      ? 'text-white'
+                      : 'text-[var(--text-muted)] border border-[var(--border-default)]'
+                  )}
+                  style={active ? { background: svc.color } : {}}
                 >
                   {svc.label}
                 </button>
@@ -86,11 +86,12 @@ export function UnifiedFeedPanel() {
         {favCount > 0 && (
           <button
             onClick={() => { setFavOnly((v) => !v); setVisibleCount(INITIAL_LIMIT); }}
-            className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full transition-colors flex-shrink-0 ${
+            className={cn(
+              'flex items-center gap-1 text-xs px-2 py-0.5 rounded-full transition-colors flex-shrink-0',
               favOnly
                 ? 'text-white'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-[var(--border-default)]'
-            }`}
+            )}
             style={favOnly ? { background: ACCENT } : {}}
             title="즐겨찾기만 보기"
           >
@@ -123,12 +124,7 @@ export function UnifiedFeedPanel() {
         ) : (
           <>
             {visibleItems.map((item) => (
-              <FeedItemComponent
-                key={item.id}
-                item={item}
-                accentColor={ACCENT}
-                showServiceBadge
-              />
+              <FeedItemComponent key={item.id} item={item} accentColor={ACCENT} showServiceBadge />
             ))}
             {hasMore && (
               <div className="px-4 py-3">

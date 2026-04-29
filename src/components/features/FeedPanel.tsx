@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { SERVICE_MAP } from '@/config/services';
 import { useGitHubFeed } from '@/hooks/useGitHubFeed';
 import { useNotionFeed } from '@/hooks/useNotionFeed';
@@ -66,11 +67,12 @@ export function FeedPanel({ service, expanded = false }: FeedPanelProps) {
           {!isLoading && favCount > 0 && (
             <button
               onClick={() => { setFavOnly((v) => !v); setVisibleCount(INITIAL_LIMIT); }}
-              className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full transition-colors ${
+              className={cn(
+                'flex items-center gap-1 text-xs px-2 py-0.5 rounded-full transition-colors',
                 favOnly
                   ? 'text-white'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-[var(--border-default)]'
-              }`}
+              )}
               style={favOnly ? { background: config.color } : {}}
               title="즐겨찾기만 보기"
             >
@@ -86,7 +88,7 @@ export function FeedPanel({ service, expanded = false }: FeedPanelProps) {
 
       {/* 본문 */}
       <div
-        className={`flex-1 py-1 ${expanded ? 'overflow-y-auto' : ''}`}
+        className={cn('flex-1 py-1', expanded && 'overflow-y-auto')}
         style={expanded ? { maxHeight: 'calc(100vh - 260px)' } : {}}
       >
         {isLoading ? (

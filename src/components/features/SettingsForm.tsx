@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { SERVICES } from '@/config/services';
 import { useNotionSettingsStore } from '@/stores/notionSettingsStore';
 import type { NotionMode } from '@/stores/notionSettingsStore';
@@ -94,7 +95,6 @@ function NotionModeSelector() {
     <div className="flex flex-col gap-3 pb-4 border-b border-[var(--border-subtle)]">
       <p className="text-xs font-medium text-[var(--text-secondary)]">조회 모드</p>
 
-      {/* 모드 토글 */}
       <div className="flex gap-2">
         {(
           [
@@ -107,13 +107,14 @@ function NotionModeSelector() {
             <button
               key={opt.value}
               onClick={() => handleModeChange(opt.value)}
-              className={`flex-1 text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${
+              className={cn(
+                'flex-1 text-left px-3 py-2.5 rounded-lg border text-xs transition-colors',
                 active
                   ? 'border-[var(--notion)] bg-[var(--notion)]/10 text-[var(--text-primary)]'
                   : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-overlay)]'
-              }`}
+              )}
             >
-              <span className={`block font-medium mb-0.5 ${active ? 'text-[var(--notion)]' : ''}`}>
+              <span className={cn('block font-medium mb-0.5', active && 'text-[var(--notion)]')}>
                 {opt.label}
               </span>
               <span className="text-[var(--text-muted)]">{opt.desc}</span>
@@ -122,7 +123,6 @@ function NotionModeSelector() {
         })}
       </div>
 
-      {/* Database ID 입력 (database 모드일 때만) */}
       {mode === 'database' && (
         <div className="flex flex-col gap-1.5">
           <label className="text-xs text-[var(--text-muted)]">
@@ -173,7 +173,10 @@ export function SettingsForm() {
       {SERVICES.map((svc) => {
         const config = SERVICE_FIELDS[svc.id];
         return (
-          <section key={svc.id} className="rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] overflow-hidden">
+          <section
+            key={svc.id}
+            className="rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] overflow-hidden"
+          >
             <div
               className="px-5 py-3.5 border-b border-[var(--border-subtle)] flex items-center gap-2"
               style={{ borderTop: `2px solid ${svc.color}` }}
