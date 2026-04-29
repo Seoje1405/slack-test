@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useGitHubFeed } from '@/hooks/useGitHubFeed';
 import { useNotionFeed } from '@/hooks/useNotionFeed';
 import { useDiscordFeed } from '@/hooks/useDiscordFeed';
@@ -24,8 +24,6 @@ export function UnifiedFeedPanel() {
   const [serviceFilter, setServiceFilter] = useState<ServiceId | null>(null);
 
   const favorites = useFeedAnnotationStore((s) => s.favorites);
-  const markSeen = useFeedAnnotationStore((s) => s.markSeen);
-  const markedRef = useRef<Set<ServiceId>>(new Set());
 
   const isLoading = [github, notion, discord, figma].every((q) => q.isPending);
 
@@ -37,22 +35,6 @@ export function UnifiedFeedPanel() {
       ...(figma.data?.items ?? []),
     ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   }, [github.data, notion.data, discord.data, figma.data]);
-
-  // Mark each service as seen when its data loads
-  useEffect(() => {
-    const queries: [typeof github, ServiceId][] = [
-      [github, 'github'],
-      [notion, 'notion'],
-      [discord, 'discord'],
-      [figma, 'figma'],
-    ];
-    for (const [q, id] of queries) {
-      if (q.data?.status === 'ok' && !markedRef.current.has(id)) {
-        markedRef.current.add(id);
-        markSeen(id);
-      }
-    }
-  }, [github.data, notion.data, discord.data, figma.data, markSeen]);
 
   const serviceFiltered = serviceFilter
     ? allItems.filter((item) => item.service === serviceFilter)
@@ -101,25 +83,23 @@ export function UnifiedFeedPanel() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {favCount > 0 && (
-            <button
-              onClick={() => { setFavOnly((v) => !v); setVisibleCount(INITIAL_LIMIT); }}
-              className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full transition-colors ${
-                favOnly
-                  ? 'text-white'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-[var(--border-default)]'
-              }`}
-              style={favOnly ? { background: ACCENT } : {}}
-              title="즐겨찾기만 보기"
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-              {favCount}
-            </button>
-          )}
-        </div>
+        {favCount > 0 && (
+          <button
+            onClick={() => { setFavOnly((v) => !v); setVisibleCount(INITIAL_LIMIT); }}
+            className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full transition-colors flex-shrink-0 ${
+              favOnly
+                ? 'text-white'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-[var(--border-default)]'
+            }`}
+            style={favOnly ? { background: ACCENT } : {}}
+            title="즐겨찾기만 보기"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            {favCount}
+          </button>
+        )}
       </div>
 
       {/* 본문 */}

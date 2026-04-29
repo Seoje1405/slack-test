@@ -4,42 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SERVICES } from '@/config/services';
 import { useDashboardStore } from '@/stores/dashboardStore';
-import { useFeedAnnotationStore } from '@/stores/feedAnnotationStore';
-import { useGitHubFeed } from '@/hooks/useGitHubFeed';
-import { useNotionFeed } from '@/hooks/useNotionFeed';
-import { useDiscordFeed } from '@/hooks/useDiscordFeed';
-import { useFigmaFeed } from '@/hooks/useFigmaFeed';
-import type { FeedItem, ServiceId } from '@/types/feed';
-
-function useUnreadCounts(): Record<ServiceId, number> {
-  const github = useGitHubFeed();
-  const notion = useNotionFeed();
-  const discord = useDiscordFeed();
-  const figma = useFigmaFeed();
-
-  const lastSeenAt = useFeedAnnotationStore((s) => s.lastSeenAt);
-
-  function count(items: FeedItem[], service: ServiceId): number {
-    const seenAt = lastSeenAt[service];
-    if (!seenAt || !items.length) return 0;
-    return items.filter((item) => new Date(item.time) > new Date(seenAt)).length;
-  }
-
-  return {
-    github: count(github.data?.items ?? [], 'github'),
-    notion: count(notion.data?.items ?? [], 'notion'),
-    discord: count(discord.data?.items ?? [], 'discord'),
-    figma: count(figma.data?.items ?? [], 'figma'),
-  };
-}
+import type { ServiceId } from '@/types/feed';
 
 export function Sidebar() {
   const pathname = usePathname();
   const { activeFilter, viewMode, setFilter, setViewMode } = useDashboardStore();
-  const unread = useUnreadCounts();
   const isDashboard = pathname === '/dashboard';
-
-  const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
 
   return (
     <aside className="w-[220px] flex-shrink-0 bg-[var(--bg-surface)] border-r border-[var(--border-subtle)] flex flex-col h-full">
@@ -62,12 +32,7 @@ export function Sidebar() {
           onClick={() => setFilter(null)}
         >
           <span className="text-base">🏠</span>
-          <span className="flex-1">전체</span>
-          {totalUnread > 0 && isDashboard && viewMode !== 'unified' && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full font-mono text-white bg-[var(--accent-light)]">
-              {totalUnread}
-            </span>
-          )}
+          <span>전체</span>
         </button>
 
         {/* 통합 보기 */}
@@ -80,12 +45,7 @@ export function Sidebar() {
           onClick={() => setViewMode('unified')}
         >
           <span className="text-base">⚡</span>
-          <span className="flex-1">통합 보기</span>
-          {totalUnread > 0 && isDashboard && viewMode === 'unified' && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full font-mono text-white bg-[var(--accent-light)]">
-              {totalUnread}
-            </span>
-          )}
+          <span>통합 보기</span>
         </button>
 
         {/* 구분선 */}
@@ -106,15 +66,7 @@ export function Sidebar() {
               className="w-2 h-2 rounded-full flex-shrink-0"
               style={{ background: svc.color }}
             />
-            <span className="flex-1">{svc.label}</span>
-            {unread[svc.id] > 0 && (
-              <span
-                className="text-xs px-1.5 py-0.5 rounded-full font-mono text-white"
-                style={{ background: svc.color }}
-              >
-                {unread[svc.id]}
-              </span>
-            )}
+            <span>{svc.label}</span>
           </button>
         ))}
       </nav>

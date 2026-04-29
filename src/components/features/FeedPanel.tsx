@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState } from 'react';
 import { SERVICE_MAP } from '@/config/services';
 import { useGitHubFeed } from '@/hooks/useGitHubFeed';
 import { useNotionFeed } from '@/hooks/useNotionFeed';
@@ -35,11 +35,6 @@ export function FeedPanel({ service, expanded = false }: FeedPanelProps) {
   const [favOnly, setFavOnly] = useState(false);
 
   const favorites = useFeedAnnotationStore((s) => s.favorites);
-  const markSeen = useFeedAnnotationStore((s) => s.markSeen);
-
-  // Capture lastSeenAt before markSeen updates it
-  const initialSeenAtRef = useRef(useFeedAnnotationStore.getState().lastSeenAt[service]);
-  const markedRef = useRef(false);
 
   const data = query.data as FeedResponse | undefined;
   const isLoading = query.isPending;
@@ -49,21 +44,6 @@ export function FeedPanel({ service, expanded = false }: FeedPanelProps) {
   const visibleItems = expanded ? filteredItems : filteredItems.slice(0, visibleCount);
   const hasMore = !expanded && visibleCount < filteredItems.length;
   const favCount = allItems.filter((item) => favorites[item.id]).length;
-
-  // Unread count based on snapshot taken before this session's markSeen
-  const unreadCount = useMemo(() => {
-    const seenAt = initialSeenAtRef.current;
-    if (!seenAt || !allItems.length) return 0;
-    return allItems.filter((item) => new Date(item.time) > new Date(seenAt)).length;
-  }, [allItems]);
-
-  // Mark as seen once data loads
-  useEffect(() => {
-    if (status === 'ok' && allItems.length > 0 && !markedRef.current) {
-      markedRef.current = true;
-      markSeen(service);
-    }
-  }, [status, allItems.length, markSeen, service]);
 
   return (
     <div className="rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] flex flex-col overflow-hidden min-h-[320px]">
@@ -79,14 +59,6 @@ export function FeedPanel({ service, expanded = false }: FeedPanelProps) {
                 : visibleCount < filteredItems.length
                 ? `${visibleCount}/${filteredItems.length}`
                 : filteredItems.length}
-            </span>
-          )}
-          {unreadCount > 0 && (
-            <span
-              className="text-xs px-1.5 py-0.5 rounded-full font-mono text-white"
-              style={{ background: config.color }}
-            >
-              +{unreadCount} new
             </span>
           )}
         </div>
