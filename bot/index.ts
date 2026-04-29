@@ -7,16 +7,23 @@ import {
 } from 'discord.js';
 import { appendEvent } from './store.js';
 
+// 환경변수 상태 출력 (값은 노출하지 않음)
+console.log('[Bot] 환경변수 체크:');
+console.log(`  DISCORD_BOT_TOKEN       : ${process.env.DISCORD_BOT_TOKEN       ? '✓' : '✗ 없음'}`);
+console.log(`  UPSTASH_REDIS_REST_URL  : ${process.env.UPSTASH_REDIS_REST_URL  ? '✓' : '✗ 없음'}`);
+console.log(`  UPSTASH_REDIS_REST_TOKEN: ${process.env.UPSTASH_REDIS_REST_TOKEN ? '✓' : '✗ 없음'}`);
+console.log(`  DISCORD_GUILD_ID        : ${process.env.DISCORD_GUILD_ID        ? '✓' : '(미설정 — 전체 서버 수신)'}`);
+
 const token = process.env.DISCORD_BOT_TOKEN;
 const guildId = process.env.DISCORD_GUILD_ID;
 
 if (!token) {
-  console.error('[Bot] DISCORD_BOT_TOKEN이 설정되지 않았습니다.');
+  console.error('[Bot] 종료: DISCORD_BOT_TOKEN 없음');
   process.exit(1);
 }
 
 if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-  console.error('[Bot] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN이 설정되지 않았습니다.');
+  console.error('[Bot] 종료: UPSTASH_REDIS_REST_URL 또는 UPSTASH_REDIS_REST_TOKEN 없음');
   process.exit(1);
 }
 
