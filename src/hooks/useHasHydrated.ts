@@ -7,3 +7,4 @@ const getServerSnapshot = () => false;
 export function useHasHydrated() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
+

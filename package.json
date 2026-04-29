@@ -10,6 +10,7 @@
     "bot:dev": "tsx --tsconfig bot/tsconfig.json bot/index.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.1",
     "@base-ui/react": "^1.4.1",
     "@tanstack/react-query": "^5.100.6",
     "@tanstack/react-query-devtools": "^5.100.6",
@@ -17,6 +18,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "discord.js": "^14.26.3",
+    "groq-sdk": "^1.1.2",
     "lucide-react": "^1.12.0",
     "next": "16.2.4",
     "react": "19.2.4",
