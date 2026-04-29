@@ -158,26 +158,38 @@ function NotionModeSelector() {
 }
 
 function DiscordBotGuide() {
+  const steps = [
+    {
+      label: '1. Upstash Redis 생성',
+      desc: 'upstash.com → Redis → Create Database → REST URL / Token 복사',
+    },
+    {
+      label: '2. Discord Privileged Intents 활성화',
+      desc: 'Discord Developer Portal → Bot → SERVER MEMBERS INTENT, MESSAGE CONTENT INTENT 켜기',
+    },
+    {
+      label: '3. Railway에 봇 배포',
+      desc: 'railway.app → New Project → GitHub 레포 연결 → 환경변수 설정 후 배포',
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-3 pb-4 border-b border-[var(--border-subtle)]">
-      <p className="text-xs font-medium text-[var(--text-secondary)]">Gateway 봇 설정</p>
-      <div className="rounded-lg bg-[var(--bg-overlay)] border border-[var(--border-subtle)] p-3 flex flex-col gap-2">
-        <p className="text-xs text-[var(--text-muted)]">
-          채팅·음성 입퇴장·멘션·멤버 변동 등 서버 전체 활동을 수신하려면 별도 봇 프로세스가 필요합니다.
-        </p>
-        <div className="flex flex-col gap-1">
-          <p className="text-xs text-[var(--text-secondary)] font-medium">1. Discord Developer Portal에서 Privileged Intents 활성화</p>
-          <p className="text-xs text-[var(--text-muted)] pl-3">Bot → Privileged Gateway Intents → SERVER MEMBERS, MESSAGE CONTENT 켜기</p>
+      <p className="text-xs font-medium text-[var(--text-secondary)]">Gateway 봇 배포 순서</p>
+      <div className="rounded-lg bg-[var(--bg-overlay)] border border-[var(--border-subtle)] p-3 flex flex-col gap-3">
+        {steps.map((step) => (
+          <div key={step.label} className="flex flex-col gap-0.5">
+            <p className="text-xs font-medium text-[var(--text-secondary)]">{step.label}</p>
+            <p className="text-xs text-[var(--text-muted)]">{step.desc}</p>
+          </div>
+        ))}
+        <div className="border-t border-[var(--border-subtle)] pt-2">
+          <p className="text-xs text-[var(--text-muted)]">
+            Vercel과 Railway 양쪽에{' '}
+            <code className="font-mono">UPSTASH_REDIS_REST_URL</code>,{' '}
+            <code className="font-mono">UPSTASH_REDIS_REST_TOKEN</code> 환경변수를 추가하세요.
+          </p>
         </div>
-        <div className="flex flex-col gap-1">
-          <p className="text-xs text-[var(--text-secondary)] font-medium">2. 봇 실행</p>
-          <code className="text-xs font-mono bg-[var(--bg-elevated)] px-2 py-1 rounded text-[var(--accent-light)]">
-            pnpm bot:dev
-          </code>
-        </div>
-        <p className="text-xs text-[var(--text-muted)]">
-          봇이 실행 중이면 이벤트가 <code className="font-mono">bot/events.json</code>에 저장되어 대시보드에 표시됩니다.
-        </p>
       </div>
     </div>
   );
@@ -256,11 +268,15 @@ GITHUB_REPO=owner/repo
 
 # Notion
 NOTION_TOKEN=secret_xxxxxxxxxxxxxxxxxxxx
-NOTION_DATABASE_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # database 모드 기본값
+NOTION_DATABASE_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Discord (Gateway 봇)
 DISCORD_BOT_TOKEN=MTxxxxxxxxxxxxxxxxxxxxxxxxxx
 DISCORD_GUILD_ID=000000000000000000  # 선택: 특정 서버만 수신
+
+# Upstash Redis (Vercel + Railway 공통)
+UPSTASH_REDIS_REST_URL=https://xxxx.upstash.io
+UPSTASH_REDIS_REST_TOKEN=xxxxxxxxxxxxxxxxxxxx
 
 # Figma
 FIGMA_TOKEN=figd_xxxxxxxxxxxxxxxxxxxx

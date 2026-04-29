@@ -2,6 +2,7 @@ import { config } from 'dotenv';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+// 로컬 개발 시 .env.local 로드 (Railway에서는 대시보드 환경변수 사용)
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, '..', '.env.local') });
 
@@ -15,10 +16,15 @@ import {
 import { appendEvent } from './store.js';
 
 const token = process.env.DISCORD_BOT_TOKEN;
-const guildId = process.env.DISCORD_GUILD_ID; // 특정 서버로 제한 (선택)
+const guildId = process.env.DISCORD_GUILD_ID;
 
 if (!token) {
   console.error('[Bot] DISCORD_BOT_TOKEN이 설정되지 않았습니다.');
+  process.exit(1);
+}
+
+if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+  console.error('[Bot] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN이 설정되지 않았습니다.');
   process.exit(1);
 }
 
@@ -44,7 +50,7 @@ client.once(Events.ClientReady, (c) => {
 });
 
 // 메시지 (멘션 포함)
-client.on(Events.MessageCreate, (message) => {
+client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
   if (!isTargetGuild(message.guildId)) return;
 
@@ -52,7 +58,7 @@ client.on(Events.MessageCreate, (message) => {
   const channelName = message.channel instanceof TextChannel ? message.channel.name : 'DM';
   const content = message.content.slice(0, 120) + (message.content.length > 120 ? '…' : '');
 
-  appendEvent({
+  await appendEvent({
     id: message.id,
     type: hasMention ? 'mention' : 'message',
     title: content || '(첨부파일 또는 임베드)',
@@ -61,21 +67,18 @@ client.on(Events.MessageCreate, (message) => {
     time: message.createdAt.toISOString(),
     tag: `#${channelName}`,
     url: message.url,
-  });
+  }).catch(console.error);
 });
 
-// 음성 채널 입/퇴장
-client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+// 음성 채널 입/퇴장/이동
+client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
   const user = newState.member?.user ?? oldState.member?.user;
   if (!user || user.bot) return;
   if (!isTargetGuild(newState.guild?.id ?? oldState.guild?.id)) return;
 
   const joined = !oldState.channelId && !!newState.channelId;
   const left = !!oldState.channelId && !newState.channelId;
-  const moved =
-    !!oldState.channelId &&
-    !!newState.channelId &&
-    oldState.channelId !== newState.channelId;
+  const moved = !!oldState.channelId && !!newState.channelId && oldState.channelId !== newState.channelId;
 
   if (!joined && !left && !moved) return;
 
@@ -87,7 +90,7 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
     ? `${user.username}님이 ${newState.channel?.name}으로 이동`
     : `${user.username}님이 ${channelName}에서 퇴장`;
 
-  appendEvent({
+  await appendEvent({
     id: `voice-${user.id}-${Date.now()}`,
     type,
     title,
@@ -96,14 +99,14 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
     time: new Date().toISOString(),
     tag: channelName,
     url: null,
-  });
+  }).catch(console.error);
 });
 
 // 멤버 입장
-client.on(Events.GuildMemberAdd, (member) => {
+client.on(Events.GuildMemberAdd, async (member) => {
   if (!isTargetGuild(member.guild.id)) return;
 
-  appendEvent({
+  await appendEvent({
     id: `join-${member.id}-${Date.now()}`,
     type: 'member_join',
     title: `${member.user.username}님이 서버에 참가`,
@@ -112,14 +115,14 @@ client.on(Events.GuildMemberAdd, (member) => {
     time: new Date().toISOString(),
     tag: '서버 참가',
     url: null,
-  });
+  }).catch(console.error);
 });
 
 // 멤버 퇴장
-client.on(Events.GuildMemberRemove, (member) => {
+client.on(Events.GuildMemberRemove, async (member) => {
   if (!isTargetGuild(member.guild.id)) return;
 
-  appendEvent({
+  await appendEvent({
     id: `leave-${member.id}-${Date.now()}`,
     type: 'member_leave',
     title: `${member.user.username}님이 서버에서 퇴장`,
@@ -128,7 +131,7 @@ client.on(Events.GuildMemberRemove, (member) => {
     time: new Date().toISOString(),
     tag: '서버 퇴장',
     url: null,
-  });
+  }).catch(console.error);
 });
 
 client.login(token);

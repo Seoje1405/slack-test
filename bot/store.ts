@@ -1,9 +1,6 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { Redis } from '@upstash/redis';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-export const STORE_PATH = join(__dirname, 'events.json');
+const KEY = 'discord:events';
 const MAX_EVENTS = 200;
 
 export interface DiscordEvent {
@@ -17,20 +14,21 @@ export interface DiscordEvent {
   url: string | null;
 }
 
-export function readEvents(): DiscordEvent[] {
-  if (!existsSync(STORE_PATH)) return [];
-  try {
-    return JSON.parse(readFileSync(STORE_PATH, 'utf-8'));
-  } catch {
-    return [];
-  }
+// dotenv가 먼저 로드된 뒤 함수가 호출되므로 lazy 초기화
+function getRedis(): Redis {
+  return new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
 }
 
-export function appendEvent(event: DiscordEvent): void {
-  const events = readEvents();
-  // 중복 방지
-  if (events.some((e) => e.id === event.id)) return;
-  events.unshift(event);
-  if (events.length > MAX_EVENTS) events.splice(MAX_EVENTS);
-  writeFileSync(STORE_PATH, JSON.stringify(events, null, 2), 'utf-8');
+export async function appendEvent(event: DiscordEvent): Promise<void> {
+  const redis = getRedis();
+  await redis.lpush(KEY, event);
+  await redis.ltrim(KEY, 0, MAX_EVENTS - 1);
+}
+
+export async function readEvents(): Promise<DiscordEvent[]> {
+  const redis = getRedis();
+  return redis.lrange<DiscordEvent>(KEY, 0, MAX_EVENTS - 1);
 }
