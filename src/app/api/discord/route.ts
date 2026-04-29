@@ -6,11 +6,11 @@ export const dynamic = 'force-dynamic';
 const KEY = 'discord:events';
 
 export async function GET(): Promise<Response> {
-  const botToken = process.env.DISCORD_BOT_TOKEN;
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-  if (!botToken || !redisUrl || !redisToken) {
+  // Vercel에 필요한 건 Redis 접속 정보뿐 (봇 토큰은 Railway에만 필요)
+  if (!redisUrl || !redisToken) {
     return Response.json({ items: [], status: 'not_configured' } satisfies FeedResponse);
   }
 
