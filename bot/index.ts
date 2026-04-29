@@ -5,7 +5,7 @@ import {
   Partials,
   TextChannel,
 } from 'discord.js';
-import { appendEvent } from './store.js';
+import { appendEvent, incrementTaskStat, incrementContributorStat } from './store.js';
 
 // 환경변수 상태 출력 (값은 노출하지 않음)
 console.log('[Bot] 환경변수 체크:');
@@ -57,9 +57,10 @@ client.on(Events.MessageCreate, async (message) => {
   const channelName = message.channel instanceof TextChannel ? message.channel.name : 'DM';
   const content = message.content.slice(0, 120) + (message.content.length > 120 ? '…' : '');
 
+  const eventType = hasMention ? 'mention' : 'message';
   await appendEvent({
     id: message.id,
-    type: hasMention ? 'mention' : 'message',
+    type: eventType,
     title: content || '(첨부파일 또는 임베드)',
     user: message.author.username,
     avatarUrl: message.author.avatarURL() ?? null,
@@ -67,6 +68,8 @@ client.on(Events.MessageCreate, async (message) => {
     tag: `#${channelName}`,
     url: message.url,
   }).catch(console.error);
+  incrementTaskStat(eventType).catch(console.error);
+  incrementContributorStat(message.author.username).catch(console.error);
 });
 
 // 음성 채널 입/퇴장/이동
@@ -99,6 +102,8 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
     tag: channelName,
     url: null,
   }).catch(console.error);
+  incrementTaskStat(type).catch(console.error);
+  incrementContributorStat(user.username).catch(console.error);
 });
 
 // 멤버 입장
@@ -115,6 +120,8 @@ client.on(Events.GuildMemberAdd, async (member) => {
     tag: '서버 참가',
     url: null,
   }).catch(console.error);
+  incrementTaskStat('member_join').catch(console.error);
+  incrementContributorStat(member.user.username).catch(console.error);
 });
 
 // 멤버 퇴장
@@ -131,6 +138,8 @@ client.on(Events.GuildMemberRemove, async (member) => {
     tag: '서버 퇴장',
     url: null,
   }).catch(console.error);
+  incrementTaskStat('member_leave').catch(console.error);
+  incrementContributorStat(member.user.username).catch(console.error);
 });
 
 client.login(token);
