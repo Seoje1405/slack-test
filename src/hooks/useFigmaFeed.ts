@@ -5,8 +5,8 @@ export function useFigmaFeed() {
   return useQuery<FeedResponse>({
     queryKey: ['feed', 'figma'],
     queryFn: () => fetch('/api/figma').then((r) => r.json()),
-    staleTime: 295 * 1000,
-    refetchInterval: 300 * 1000,
+    staleTime: 115 * 1000,
+    refetchInterval: 120 * 1000,
     retry: 2,
   });
 }
