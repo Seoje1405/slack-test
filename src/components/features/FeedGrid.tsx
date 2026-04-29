@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useDashboardStore } from '@/stores/dashboardStore';
 import { SERVICES } from '@/config/services';
 import type { ServiceId } from '@/types/feed';
 import { FeedPanel } from './FeedPanel';
 import { UnifiedFeedPanel } from './UnifiedFeedPanel';
+import { useHasHydrated } from '@/hooks/useHasHydrated';
 
 export function FeedGrid() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useHasHydrated();
 
   const activeFilter = useDashboardStore((s) => s.activeFilter);
   const viewMode = useDashboardStore((s) => s.viewMode);
