@@ -25,10 +25,14 @@ function extractTitle(event: GitHubEvent): { title: string; tag: string | null; 
 
   switch (event.type) {
     case 'PushEvent': {
-      const commits = payload.commits as Array<{ message: string }> | undefined;
+      const commits = payload.commits as Array<{ message?: string }> | undefined;
       const branch = (payload.ref as string | undefined)?.replace('refs/heads/', '') ?? '';
-      const message = commits?.[commits.length - 1]?.message ?? 'Push';
-      return { title: message.split('\n')[0], tag: t(`Push · ${branch}`), url: repoUrl };
+      const size = (payload.size as number | undefined) ?? 0;
+      const head = payload.head as string | undefined;
+      const firstMsg = commits?.find((c) => !!c?.message)?.message;
+      const title = firstMsg ? firstMsg.split('\n')[0] : size > 0 ? `커밋 ${size}건 Push` : 'Push';
+      const url = head ? `${repoUrl}/commit/${head}` : repoUrl;
+      return { title, tag: t(`Push · ${branch}`), url };
     }
     case 'PullRequestEvent': {
       const pr = payload.pull_request as { title: string; html_url: string } | undefined;
