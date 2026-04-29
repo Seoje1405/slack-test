@@ -18,14 +18,16 @@ export function FeedGrid() {
     ? [activeFilter]
     : SERVICES.map((s) => s.id);
 
+  const isExpanded = services.length === 1;
+
   return (
     <div
       className={`grid gap-4 ${
-        services.length === 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'
+        isExpanded ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'
       }`}
     >
       {services.map((service) => (
-        <FeedPanel key={service} service={service} />
+        <FeedPanel key={service} service={service} expanded={isExpanded} />
       ))}
     </div>
   );
