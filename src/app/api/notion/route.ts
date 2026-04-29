@@ -1,4 +1,5 @@
 import { transformNotionPages } from '@/lib/notion';
+import type { UserMap } from '@/lib/notion';
 import type { FeedResponse } from '@/types/feed';
 
 export const revalidate = 120;
@@ -8,6 +9,51 @@ const NOTION_HEADERS = (token: string) => ({
   'Content-Type': 'application/json',
   'Notion-Version': '2022-06-28',
 });
+
+// 프로세스 수명 동안 유지되는 유저 정보 캐시
+const userCache = new Map<string, { name: string; avatarUrl: string | null }>();
+
+async function fetchUserInfo(
+  token: string,
+  userId: string
+): Promise<{ name: string; avatarUrl: string | null }> {
+  if (userCache.has(userId)) return userCache.get(userId)!;
+
+  try {
+    const res = await fetch(`https://api.notion.com/v1/users/${userId}`, {
+      headers: NOTION_HEADERS(token),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const info = { name: data.name ?? 'Unknown', avatarUrl: data.avatar_url ?? null };
+      userCache.set(userId, info);
+      return info;
+    }
+  } catch {
+    // ignore
+  }
+
+  const fallback = { name: 'Unknown', avatarUrl: null };
+  userCache.set(userId, fallback);
+  return fallback;
+}
+
+async function buildUserMap(
+  token: string,
+  results: Array<{ last_edited_by?: { id?: string } }>
+): Promise<UserMap> {
+  const ids = [
+    ...new Set(
+      results
+        .map((r) => r.last_edited_by?.id)
+        .filter((id): id is string => Boolean(id))
+    ),
+  ];
+  const entries = await Promise.all(
+    ids.map(async (id) => [id, await fetchUserInfo(token, id)] as const)
+  );
+  return Object.fromEntries(entries);
+}
 
 async function parseNotionError(res: Response): Promise<string> {
   try {
@@ -35,7 +81,6 @@ async function parseNotionError(res: Response): Promise<string> {
   return `Notion API ${res.status}`;
 }
 
-/** Integration이 접근 가능한 모든 페이지 변경사항 (Search API) */
 async function fetchAllPages(token: string): Promise<Response> {
   return fetch('https://api.notion.com/v1/search', {
     method: 'POST',
@@ -47,7 +92,6 @@ async function fetchAllPages(token: string): Promise<Response> {
   });
 }
 
-/** 특정 데이터베이스의 페이지만 조회 (Database Query API) */
 async function fetchDatabase(token: string, databaseId: string): Promise<Response> {
   return fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
     method: 'POST',
@@ -67,17 +111,25 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ items: [], status: 'not_configured' } satisfies FeedResponse);
   }
 
-  let body: { database_id?: string } = {};
+  let body: { mode?: string; database_id?: string } = {};
   try {
     body = await request.json();
   } catch {
-    // No body — use env defaults
+    // No body
   }
 
-  const databaseId = body.database_id ?? envDatabaseId;
+  // mode가 명시적으로 'search'면 Search API, 'database'면 DB ID 우선 사용
+  // mode 미지정 시 DB ID 여부로 결정 (기존 동작)
+  let databaseId: string | null = null;
+  if (body.mode === 'database') {
+    databaseId = body.database_id ?? envDatabaseId ?? null;
+  } else if (body.mode === 'search') {
+    databaseId = null;
+  } else {
+    databaseId = body.database_id ?? envDatabaseId ?? null;
+  }
 
   try {
-    // DB ID가 없으면 Search API로 전체 페이지 변경사항 조회
     const res = databaseId
       ? await fetchDatabase(token, databaseId)
       : await fetchAllPages(token);
@@ -91,8 +143,10 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const data = await res.json();
-    // Search API는 data.results, Database Query도 data.results
-    const items = transformNotionPages(data.results ?? []);
+    const results = data.results ?? [];
+    const userMap = await buildUserMap(token, results);
+    const items = transformNotionPages(results, userMap);
+
     return Response.json({ items, status: 'ok' } satisfies FeedResponse);
   } catch (err) {
     return Response.json({
