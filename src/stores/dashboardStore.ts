@@ -7,16 +7,20 @@ interface DashboardStore {
   activeFilter: ServiceId | null;
   viewMode: ViewMode;
   meetingMode: boolean;
+  notionAddMode: boolean;
   setFilter: (service: ServiceId | null) => void;
   setViewMode: (mode: ViewMode) => void;
   toggleMeetingMode: () => void;
+  toggleNotionAddMode: () => void;
 }
 
 export const useDashboardStore = create<DashboardStore>((set) => ({
   activeFilter: null,
   viewMode: 'grid',
   meetingMode: false,
+  notionAddMode: false,
   setFilter: (service) => set({ activeFilter: service, viewMode: 'grid' }),
   setViewMode: (mode) => set({ viewMode: mode, activeFilter: null }),
-  toggleMeetingMode: () => set((s) => ({ meetingMode: !s.meetingMode })),
+  toggleMeetingMode: () => set((s) => ({ meetingMode: !s.meetingMode, notionAddMode: false })),
+  toggleNotionAddMode: () => set((s) => ({ notionAddMode: !s.notionAddMode, meetingMode: false })),
 }));

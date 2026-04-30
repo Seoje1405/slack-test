@@ -9,7 +9,7 @@ import type { ServiceId } from '@/types/feed';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { activeFilter, viewMode, setFilter, setViewMode, meetingMode, toggleMeetingMode } =
+  const { activeFilter, viewMode, setFilter, setViewMode, meetingMode, toggleMeetingMode, notionAddMode, toggleNotionAddMode } =
     useDashboardStore();
   const isDashboard = pathname === '/dashboard';
 
@@ -80,6 +80,20 @@ export function Sidebar() {
         )}
 
         <div className="my-2 border-t border-[var(--border-subtle)]" />
+
+        {/* Notion 페이지 추가 */}
+        <button
+          onClick={toggleNotionAddMode}
+          className={cn(
+            'w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
+            notionAddMode
+              ? 'bg-[var(--notion)]/10 text-[var(--text-primary)] border border-[var(--notion)]/30'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-overlay)] hover:text-[var(--text-primary)]'
+          )}
+        >
+          <span className="text-base">📝</span>
+          <span>Notion 추가</span>
+        </button>
 
         {/* 회의 모드 토글 */}
         <button

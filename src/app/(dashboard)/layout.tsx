@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { Topbar } from '@/components/layouts/Topbar';
 import { MeetingPanel } from '@/components/features/MeetingPanel';
+import { NotionAddPanel } from '@/components/features/NotionAddPanel';
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,7 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
       <MeetingPanel />
+      <NotionAddPanel />
     </div>
   );
 }
