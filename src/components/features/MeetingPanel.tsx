@@ -124,7 +124,7 @@ export function MeetingPanel() {
 
           {!summary && !loading && !error && (
             <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">
-              "아젠다 생성"을 눌러 최근 팀 활동을 기반으로 회의 아젠다를 만들어보세요.
+              &quot;아젠다 생성&quot;을 눌러 최근 팀 활동을 기반으로 회의 아젠다를 만들어보세요.
             </p>
           )}
 
