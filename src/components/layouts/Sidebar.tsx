@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { SERVICES } from '@/config/services';
 import { useDashboardStore } from '@/stores/dashboardStore';
+import { useNotificationStore } from '@/stores/notificationStore';
+import { useServiceBadgeCounts } from '@/hooks/useServiceBadgeCounts';
 import type { ServiceId } from '@/types/feed';
 
 export function Sidebar() {
@@ -17,6 +19,8 @@ export function Sidebar() {
   } = useDashboardStore();
 
   const isDashboard = pathname === '/dashboard';
+  const markSeen = useNotificationStore((s) => s.markSeen);
+  const badgeCounts = useServiceBadgeCounts();
 
   const navItemClass = (active: boolean) =>
     cn(
@@ -55,16 +59,30 @@ export function Sidebar() {
 
         <div className="my-2 border-t border-[var(--border-subtle)]" />
 
-        {SERVICES.map((svc) => (
-          <button
-            key={svc.id}
-            className={navItemClass(isDashboard && activeFilter === svc.id && viewMode === 'grid')}
-            onClick={() => setFilter(svc.id as ServiceId)}
-          >
-            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: svc.color }} />
-            <span>{svc.label}</span>
-          </button>
-        ))}
+        {SERVICES.map((svc) => {
+          const count = badgeCounts[svc.id as ServiceId];
+          return (
+            <button
+              key={svc.id}
+              className={navItemClass(isDashboard && activeFilter === svc.id && viewMode === 'grid')}
+              onClick={() => {
+                setFilter(svc.id as ServiceId);
+                markSeen(svc.id as ServiceId);
+              }}
+            >
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: svc.color }} />
+              <span className="flex-1">{svc.label}</span>
+              {count > 0 && (
+                <span
+                  className="text-[10px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-white flex-shrink-0"
+                  style={{ background: svc.color }}
+                >
+                  {count > 99 ? '99+' : count}
+                </span>
+              )}
+            </button>
+          );
+        })}
 
         <div className="my-2 border-t border-[var(--border-subtle)]" />
 
