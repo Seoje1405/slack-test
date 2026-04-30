@@ -7,6 +7,8 @@ import { useNotionFeed } from '@/hooks/useNotionFeed';
 import { useDiscordFeed } from '@/hooks/useDiscordFeed';
 import { useFigmaFeed } from '@/hooks/useFigmaFeed';
 import { useFeedAnnotationStore } from '@/stores/feedAnnotationStore';
+import { useDashboardStore } from '@/stores/dashboardStore';
+import { useUserProfileStore, matchesMyUsername } from '@/stores/userProfileStore';
 import { SERVICES } from '@/config/services';
 import type { FeedItem, ServiceId } from '@/types/feed';
 import { FeedItem as FeedItemComponent, FeedItemSkeleton } from './FeedItem';
@@ -43,6 +45,10 @@ export function UnifiedFeedPanel() {
 
   const deferredSearch = useDeferredValue(searchQuery);
 
+  const myItemsFilter = useDashboardStore((s) => s.myItemsFilter);
+  const setMyItemsFilter = useDashboardStore((s) => s.setMyItemsFilter);
+  const myUsername = useUserProfileStore((s) => s.myUsername);
+
   const favorites = useFeedAnnotationStore((s) => s.favorites);
 
   const isLoading = [github, notion, discord, figma].every((q) => q.isPending);
@@ -75,21 +81,27 @@ export function UnifiedFeedPanel() {
       })
     : dateFiltered;
 
-  const filteredItems = favOnly
-    ? searchFiltered.filter((item) => favorites[item.id])
+  const myFiltered = myItemsFilter && myUsername
+    ? searchFiltered.filter((item) => matchesMyUsername(item, myUsername))
     : searchFiltered;
+
+  const filteredItems = favOnly
+    ? myFiltered.filter((item) => favorites[item.id])
+    : myFiltered;
 
   const visibleItems = filteredItems.slice(0, visibleCount);
   const hasMore = visibleCount < filteredItems.length;
   const favCount = allItems.filter((item) => favorites[item.id]).length;
+  const myItemsCount = myUsername ? allItems.filter((item) => matchesMyUsername(item, myUsername)).length : 0;
 
-  const hasActiveFilter = !!serviceFilter || !!dateFilter || !!deferredSearch.trim() || favOnly;
+  const hasActiveFilter = !!serviceFilter || !!dateFilter || !!deferredSearch.trim() || favOnly || myItemsFilter;
 
   function resetFilters() {
     setServiceFilter(null);
     setDateFilter(null);
     setSearchQuery('');
     setFavOnly(false);
+    setMyItemsFilter(false);
     setVisibleCount(INITIAL_LIMIT);
   }
 
@@ -126,6 +138,23 @@ export function UnifiedFeedPanel() {
                   </button>
                 );
               })}
+              {myUsername && (
+                <button
+                  onClick={() => { setMyItemsFilter(!myItemsFilter); setVisibleCount(INITIAL_LIMIT); }}
+                  className={cn(
+                    'flex items-center gap-1 text-xs px-2 py-0.5 rounded-full transition-colors font-mono',
+                    myItemsFilter
+                      ? 'text-white bg-[var(--accent-light)]'
+                      : 'text-[var(--text-muted)] border border-[var(--border-default)]'
+                  )}
+                  title={`내 항목 (${myItemsCount}개)`}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                  </svg>
+                  나{myItemsCount > 0 && !myItemsFilter && <span className="ml-0.5 opacity-60">{myItemsCount}</span>}
+                </button>
+              )}
             </div>
           </div>
 
@@ -234,7 +263,13 @@ export function UnifiedFeedPanel() {
         ) : (
           <>
             {visibleItems.map((item) => (
-              <FeedItemComponent key={item.id} item={item} accentColor={ACCENT} showServiceBadge />
+              <FeedItemComponent
+                key={item.id}
+                item={item}
+                accentColor={ACCENT}
+                showServiceBadge
+                isMine={!!myUsername && matchesMyUsername(item, myUsername)}
+              />
             ))}
             {hasMore && (
               <div className="px-4 py-3">

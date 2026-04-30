@@ -9,6 +9,7 @@ import { useNotionFeed } from '@/hooks/useNotionFeed';
 import { useDiscordFeed } from '@/hooks/useDiscordFeed';
 import { useFigmaFeed } from '@/hooks/useFigmaFeed';
 import { useFeedAnnotationStore } from '@/stores/feedAnnotationStore';
+import { useUserProfileStore, matchesMyUsername } from '@/stores/userProfileStore';
 import type { ServiceId, FeedResponse } from '@/types/feed';
 import { FeedItem, FeedItemSkeleton } from './FeedItem';
 
@@ -36,6 +37,7 @@ export function FeedPanel({ service, expanded = false }: FeedPanelProps) {
   const [favOnly, setFavOnly] = useState(false);
 
   const favorites = useFeedAnnotationStore((s) => s.favorites);
+  const myUsername = useUserProfileStore((s) => s.myUsername);
 
   const data = query.data as FeedResponse | undefined;
   const isLoading = query.isPending;
@@ -107,7 +109,12 @@ export function FeedPanel({ service, expanded = false }: FeedPanelProps) {
         ) : (
           <>
             {visibleItems.map((item) => (
-              <FeedItem key={item.id} item={item} accentColor={config.color} />
+              <FeedItem
+                key={item.id}
+                item={item}
+                accentColor={config.color}
+                isMine={!!myUsername && matchesMyUsername(item, myUsername)}
+              />
             ))}
             {hasMore && (
               <div className="px-4 py-2">

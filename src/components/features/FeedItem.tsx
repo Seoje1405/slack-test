@@ -11,6 +11,7 @@ interface FeedItemProps {
   item: FeedItemType;
   accentColor: string;
   showServiceBadge?: boolean;
+  isMine?: boolean;
 }
 
 const REPO_PALETTE = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
@@ -39,7 +40,7 @@ function GitHubTagBadge({ tag }: { tag: string }) {
   );
 }
 
-export function FeedItem({ item, accentColor, showServiceBadge = false }: FeedItemProps) {
+export function FeedItem({ item, accentColor, showServiceBadge = false, isMine = false }: FeedItemProps) {
   const isFav = useFeedAnnotationStore((s) => !!s.favorites[item.id]);
   const toggleFavorite = useFeedAnnotationStore((s) => s.toggleFavorite);
 
@@ -47,7 +48,8 @@ export function FeedItem({ item, accentColor, showServiceBadge = false }: FeedIt
   const innerClass = cn(
     'flex items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-[var(--bg-overlay)]',
     item.url && 'cursor-pointer',
-    isFav && 'bg-[var(--bg-overlay)]'
+    isFav && 'bg-[var(--bg-overlay)]',
+    isMine && 'border-l-2 border-[var(--accent-light)] pl-[6px] bg-[var(--accent-light)]/5'
   );
 
   const content = (
@@ -79,6 +81,9 @@ export function FeedItem({ item, accentColor, showServiceBadge = false }: FeedIt
         <p className="text-sm text-[var(--text-primary)] leading-snug truncate">{item.title}</p>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-xs text-[var(--text-muted)]">{item.user}</span>
+          {isMine && (
+            <span className="text-[10px] px-1 rounded bg-[var(--accent-light)]/20 text-[var(--accent-light)] font-semibold leading-4">나</span>
+          )}
           {showServiceBadge && (
             <span
               className="text-xs px-1.5 py-0.5 rounded font-mono"

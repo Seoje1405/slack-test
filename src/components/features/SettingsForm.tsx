@@ -6,6 +6,7 @@ import { SERVICES } from '@/config/services';
 import { useNotionSettingsStore } from '@/stores/notionSettingsStore';
 import type { NotionMode } from '@/stores/notionSettingsStore';
 import { useGitHubSettingsStore } from '@/stores/githubSettingsStore';
+import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface ServiceTokenConfig {
@@ -72,6 +73,56 @@ function getRepoColor(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
   return REPO_PALETTE[h % REPO_PALETTE.length];
+}
+
+function ProfileSection() {
+  const myUsername = useUserProfileStore((s) => s.myUsername);
+  const setMyUsername = useUserProfileStore((s) => s.setMyUsername);
+  const [input, setInput] = useState(myUsername);
+
+  function handleSave() {
+    setMyUsername(input.trim());
+  }
+
+  const saved = myUsername && myUsername === input.trim();
+
+  return (
+    <section className="rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-[var(--border-subtle)]">
+        <h2 className="font-semibold text-sm text-[var(--text-primary)]">내 프로필</h2>
+      </div>
+      <div className="p-5 flex flex-col gap-3">
+        <p className="text-xs text-[var(--text-muted)]">
+          설정한 이름과 일치하거나 멘션된 항목이 피드에서 강조 표시됩니다. GitHub username 또는 Discord 닉네임을 입력하세요.
+        </p>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-[var(--text-secondary)]">사용자명</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+              placeholder="username"
+              className="flex-1 text-xs font-mono bg-[var(--bg-overlay)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-light)]"
+            />
+            <button
+              onClick={handleSave}
+              disabled={!input.trim() || saved === true}
+              className="px-3 py-2 text-xs rounded-lg bg-[var(--accent-light)] text-white hover:opacity-90 transition-opacity font-medium disabled:opacity-40"
+            >
+              저장
+            </button>
+          </div>
+          {myUsername && (
+            <p className="text-xs" style={{ color: 'var(--accent-light)' }}>
+              현재: <code className="font-mono">{myUsername}</code> — 이 이름과 일치하거나 @멘션된 항목이 강조됩니다.
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function GitHubReposManager() {
@@ -273,6 +324,8 @@ function DiscordBotGuide() {
 export function SettingsForm() {
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
+      <ProfileSection />
+
       <div className="rounded-xl bg-[var(--bg-elevated)] border border-[var(--warning)]/30 p-4">
         <p className="text-sm text-[var(--warning)]">
           <strong>토큰 설정 방법:</strong> 프로젝트 루트의{' '}

@@ -7,12 +7,14 @@ import { SERVICES } from '@/config/services';
 import { useDashboardStore } from '@/stores/dashboardStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useServiceBadgeCounts } from '@/hooks/useServiceBadgeCounts';
+import { useUserProfileStore } from '@/stores/userProfileStore';
 import type { ServiceId } from '@/types/feed';
 
 export function Sidebar() {
   const pathname = usePathname();
   const {
     activeFilter, viewMode, setFilter, setViewMode,
+    myItemsFilter, activateMyItems, setMyItemsFilter,
     meetingMode, toggleMeetingMode,
     notionAddMode, toggleNotionAddMode,
     githubIssueMode, toggleGithubIssueMode,
@@ -22,6 +24,7 @@ export function Sidebar() {
   const isDashboard = pathname === '/dashboard';
   const markSeen = useNotificationStore((s) => s.markSeen);
   const badgeCounts = useServiceBadgeCounts();
+  const myUsername = useUserProfileStore((s) => s.myUsername);
 
   const navItemClass = (active: boolean) =>
     cn(
@@ -51,12 +54,24 @@ export function Sidebar() {
         </button>
 
         <button
-          className={navItemClass(isDashboard && viewMode === 'unified')}
-          onClick={() => setViewMode('unified')}
+          className={navItemClass(isDashboard && viewMode === 'unified' && !myItemsFilter)}
+          onClick={() => { setViewMode('unified'); setMyItemsFilter(false); }}
         >
           <span className="text-base">⚡</span>
           <span>통합 보기</span>
         </button>
+
+        {myUsername && (
+          <button
+            className={navItemClass(isDashboard && viewMode === 'unified' && myItemsFilter)}
+            onClick={() => activateMyItems()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="flex-shrink-0 opacity-70">
+              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+            </svg>
+            <span>내 항목</span>
+          </button>
+        )}
 
         <div className="my-2 border-t border-[var(--border-subtle)]" />
 
