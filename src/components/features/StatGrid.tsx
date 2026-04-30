@@ -21,14 +21,14 @@ export function StatGrid() {
 
   if (!mounted) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {SERVICES.map((svc) => <StatCardSkeleton key={svc.id} />)}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
       {SERVICES.map((svc) => {
         const q = queries[svc.id as ServiceId];
         if (q.isPending) return <StatCardSkeleton key={svc.id} />;
