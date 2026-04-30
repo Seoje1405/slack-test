@@ -558,50 +558,68 @@ export const env = schema.parse(process.env)
 ```
 app/
 ├── (dashboard)/
-│   ├── layout.tsx       # Sidebar + Topbar + BottomNav + side panels
+│   ├── layout.tsx              # Sidebar + Topbar + BottomNav + side panels
 │   └── dashboard/page.tsx
 ├── api/
-│   ├── github/route.ts         # Events + Notifications (enrichPushEvents)
-│   ├── notion/route.ts         # Notion DB feed
+│   ├── github/route.ts         # GET — Events + Notifications (enrichPushEvents)
+│   ├── github/issues/route.ts  # POST — create GitHub issue
+│   ├── notion/route.ts         # GET — Notion DB feed
 │   ├── notion/create/route.ts  # POST — create Notion page
-│   ├── discord/route.ts        # Discord messages
-│   ├── figma/route.ts          # Figma changes
-│   └── refresh/route.ts        # Manual refresh trigger
-├── manifest.ts          # PWA Web App Manifest
-├── layout.tsx           # root layout (viewport, PWA meta, SW script)
-└── globals.css          # CSS vars, --bottom-nav-h, .pb-safe-nav, .h-bottom-nav
+│   ├── discord/route.ts        # GET — Discord messages from Upstash Redis
+│   ├── figma/route.ts          # GET — Figma versions + comments
+│   ├── stats/route.ts          # GET — task frequency + top contributors from Redis
+│   └── ai/meeting-summary/route.ts  # POST — Claude streaming meeting agenda
+├── manifest.ts                 # PWA Web App Manifest
+├── layout.tsx                  # root layout (viewport, PWA meta, SW script)
+└── globals.css                 # CSS vars, --bottom-nav-h, .pb-safe-nav, .h-bottom-nav
 components/
 ├── features/
-│   ├── FeedGrid.tsx         # grid of FeedPanel cards
-│   ├── FeedPanel.tsx        # single service feed card
-│   ├── StatGrid.tsx         # 4-up stat cards
-│   ├── StatCard.tsx
-│   ├── UnifiedFeedPanel.tsx # unified chronological feed
-│   ├── MeetingPanel.tsx     # right side panel — meeting mode + AI summary
-│   └── NotionAddPanel.tsx   # right side panel — Notion quick page create
+│   ├── FeedGrid.tsx            # grid of FeedPanel cards (grid / unified toggle)
+│   ├── FeedPanel.tsx           # single service feed card with pagination + fav filter
+│   ├── FeedItem.tsx            # single feed entry — avatar, title, tag, isMine highlight
+│   ├── StatGrid.tsx            # 4-up stat cards (one per service)
+│   ├── StatCard.tsx            # service color + count + status badge
+│   ├── StatsPanel.tsx          # task frequency bar + top contributors leaderboard
+│   ├── UnifiedFeedPanel.tsx    # unified chronological feed — service/date/search/myItems filter
+│   ├── MeetingPanel.tsx        # right panel — meeting mode + Claude AI streaming summary
+│   ├── NotionAddPanel.tsx      # right panel — Notion quick page create with block suggestions
+│   ├── NotionQuickAdd.tsx      # inline minimal Notion add form (bottom of Notion panel)
+│   ├── GitHubIssuePanel.tsx    # right panel — GitHub issue creation with repo selector
+│   └── SettingsForm.tsx        # settings page form — profile, repos, Notion mode, env guide
 ├── layouts/
 │   ├── Sidebar.tsx      # desktop always-visible; mobile overlay drawer
 │   ├── Topbar.tsx       # refresh button + mobile hamburger
 │   └── BottomNav.tsx    # md:hidden fixed bottom tab bar (mobile only)
 └── ui/                  # shadcn/ui base components
 hooks/                   # custom hooks ('use client')
-├── useGitHubFeed.ts
-├── useNotionFeed.ts
-├── useDiscordFeed.ts
-├── useFigmaFeed.ts
-└── useHasHydrated.ts    # SSR hydration guard
+├── useGitHubFeed.ts          # staleTime 55s, refetchInterval 60s
+├── useNotionFeed.ts          # staleTime 115s, refetchInterval 120s
+├── useDiscordFeed.ts         # staleTime 25s, refetchInterval 30s
+├── useFigmaFeed.ts           # staleTime 115s, refetchInterval 300s
+├── useServiceBadgeCounts.ts  # unread badge counts per service
+└── useHasHydrated.ts         # SSR hydration guard
 stores/
-└── dashboardStore.ts    # Zustand — activeFilter, viewMode, meetingMode, notionAddMode, sidebarOpen
+├── dashboardStore.ts         # activeFilter, viewMode, myItemsFilter, meetingMode,
+│                             #   notionAddMode, githubIssueMode, sidebarOpen
+├── feedAnnotationStore.ts    # favorites: Record<id, bool> (persisted)
+├── githubSettingsStore.ts    # repos: string[] (persisted)
+├── notionSettingsStore.ts    # mode: 'search'|'database', databaseId (persisted)
+├── notificationStore.ts      # lastSeen per service for badge counts (persisted)
+└── userProfileStore.ts       # myUsername (persisted) + matchesMyUsername()
 lib/
-├── github.ts            # transform helpers, GitHubNotification type
-└── utils.ts
+├── github.ts            # transform helpers, enrichPushEvents, GitHubNotification type
+├── notion.ts            # page title extraction, block builders
+├── discord.ts           # message normalization, avatar URL builder
+├── figma.ts             # version + comment transform, deduplication
+├── stats.ts             # Redis stats parsing helpers
+└── utils.ts             # cn(), timeAgo()
 types/
-└── feed.ts              # ServiceId, ServiceStatus, FeedItem
+└── feed.ts              # ServiceId, ServiceStatus, FeedItem, StatsData
 public/
 ├── sw.js                # Service Worker (cache-first static, network-first nav)
 └── icons/icon.svg
 config/
-└── services.ts          # SERVICES array — id, label, color per service
+└── services.ts          # SERVICES array — id, label, color, pollingInterval per service
 ```
 
 ---
@@ -616,13 +634,13 @@ config/
 
 ---
 
-## Side panel pattern (MeetingPanel / NotionAddPanel)
+## Side panel pattern (MeetingPanel / NotionAddPanel / GitHubIssuePanel)
 
-Both panels share the same interaction model — follow it for any new panel:
+All three panels share the same interaction model — follow it for any new panel:
 
 - Fixed right-side panel: `fixed top-0 right-0 h-full w-[N]px z-40 border-l flex flex-col`
-- Activated via a boolean in `dashboardStore` (e.g. `meetingMode`, `notionAddMode`)
-- **Mutually exclusive**: opening one closes the other (enforced in `dashboardStore`)
+- Activated via a boolean in `dashboardStore` (e.g. `meetingMode`, `notionAddMode`, `githubIssueMode`)
+- **Mutually exclusive**: opening one closes the other (enforced in `dashboardStore` toggle actions)
 - Toggled from the left `Sidebar` — button highlights when panel is open
 - On mobile, these panels overlay the content at full width — consider `w-full md:w-[N]px` for new panels
 
@@ -634,15 +652,17 @@ Both panels share the same interaction model — follow it for any new panel:
 |----------|---------|
 | `GITHUB_TOKEN` | Personal access token (fine-grained, `notifications:read` + `contents:read`) |
 | `GITHUB_REPOS` | Comma-separated `owner/repo` list — e.g. `org/api,org/frontend` |
-| `NOTION_SECRET` | Notion Integration token |
+| `NOTION_TOKEN` | Notion Integration token |
 | `NOTION_DATABASE_ID` | Default database for feed + page creation |
 | `DISCORD_BOT_TOKEN` | Discord bot token |
 | `DISCORD_GUILD_ID` | Target Discord server ID |
 | `FIGMA_TOKEN` | Figma personal access token |
 | `FIGMA_FILE_KEY` | Figma file key (from URL) |
-| `ANTHROPIC_API_KEY` | Claude API key for meeting AI summary |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis URL — Discord bot writes messages here; frontend reads |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis token (required alongside URL) |
+| `ANTHROPIC_API_KEY` | Claude API key for AI meeting summary (streaming) |
 | `NEXT_PUBLIC_DISCORD_VOICE_URL` | Discord voice channel invite URL (optional, shows in Sidebar) |
-| `NEXT_PUBLIC_CLAUDE_MODEL` | Override Claude model ID (optional, defaults to claude-3-haiku) |
+| `NEXT_PUBLIC_CLAUDE_MODEL` | Override Claude model ID (optional, defaults to `claude-haiku-4-5`) |
 
 ---
 
