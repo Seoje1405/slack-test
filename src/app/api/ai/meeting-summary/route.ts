@@ -1,4 +1,4 @@
-import Groq from 'groq-sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import type { FeedItem } from '@/types/feed';
 
 export const dynamic = 'force-dynamic';
@@ -39,14 +39,14 @@ ${lines}
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return Response.json({ error: 'GROQ_API_KEY not configured' }, { status: 503 });
+    return Response.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 503 });
   }
 
   let events: FeedItem[] = [];
   try {
-    const body = await request.json();
+    const body = await request.json() as { events?: unknown };
     events = Array.isArray(body.events) ? body.events : [];
   } catch {
     return Response.json({ error: 'Invalid request body' }, { status: 400 });
@@ -56,36 +56,34 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'No events provided' }, { status: 400 });
   }
 
-  const client = new Groq({ apiKey });
+  const client = new Anthropic({ apiKey });
   const encoder = new TextEncoder();
 
-  let stream: AsyncIterable<Groq.Chat.Completions.ChatCompletionChunk>;
-  try {
-    stream = await client.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: buildUserMessage(events) },
-      ],
-      temperature: 0.4,
-      stream: true,
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Groq API error';
-    const status = (err as { status?: number }).status === 429 ? 429 : 502;
-    return Response.json({ error: msg }, { status });
-  }
+  const messageStream = client.messages.stream({
+    model: 'claude-haiku-4-5',
+    max_tokens: 1024,
+    system: [
+      { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+    ],
+    messages: [{ role: 'user', content: buildUserMessage(events) }],
+  });
 
   const readable = new ReadableStream({
     async start(controller) {
       try {
-        for await (const chunk of stream) {
-          const text = chunk.choices[0]?.delta?.content ?? '';
-          if (text) controller.enqueue(encoder.encode(text));
+        for await (const event of messageStream) {
+          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+            controller.enqueue(encoder.encode(event.delta.text));
+          }
         }
-        controller.close();
       } catch (err) {
-        controller.error(err);
+        const status = (err as { status?: number }).status;
+        const msg = status === 429
+          ? '[오류: 요청 한도 초과. 잠시 후 다시 시도해주세요.]'
+          : `[오류: ${err instanceof Error ? err.message : 'Anthropic API error'}]`;
+        controller.enqueue(encoder.encode(`\n\n${msg}`));
+      } finally {
+        controller.close();
       }
     },
   });
