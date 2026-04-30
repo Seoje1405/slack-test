@@ -9,8 +9,13 @@ import type { ServiceId } from '@/types/feed';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { activeFilter, viewMode, setFilter, setViewMode, meetingMode, toggleMeetingMode, notionAddMode, toggleNotionAddMode } =
-    useDashboardStore();
+  const {
+    activeFilter, viewMode, setFilter, setViewMode,
+    meetingMode, toggleMeetingMode,
+    notionAddMode, toggleNotionAddMode,
+    sidebarOpen, setSidebarOpen,
+  } = useDashboardStore();
+
   const isDashboard = pathname === '/dashboard';
 
   const navItemClass = (active: boolean) =>
@@ -21,7 +26,7 @@ export function Sidebar() {
         : 'text-[var(--text-secondary)] hover:bg-[var(--bg-overlay)] hover:text-[var(--text-primary)]'
     );
 
-  return (
+  const sidebarContent = (
     <aside className="w-[220px] flex-shrink-0 bg-[var(--bg-surface)] border-r border-[var(--border-subtle)] flex flex-col h-full">
       {/* 로고 */}
       <div className="px-5 py-5 border-b border-[var(--border-subtle)]">
@@ -30,7 +35,7 @@ export function Sidebar() {
         </span>
       </div>
 
-      {/* 대시보드 네비 */}
+      {/* 네비 */}
       <nav className="flex-1 overflow-y-auto py-3 px-2">
         <button
           className={navItemClass(isDashboard && activeFilter === null && viewMode === 'grid')}
@@ -56,17 +61,13 @@ export function Sidebar() {
             className={navItemClass(isDashboard && activeFilter === svc.id && viewMode === 'grid')}
             onClick={() => setFilter(svc.id as ServiceId)}
           >
-            <span
-              className="w-2 h-2 rounded-full flex-shrink-0"
-              style={{ background: svc.color }}
-            />
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: svc.color }} />
             <span>{svc.label}</span>
           </button>
         ))}
 
         <div className="my-2 border-t border-[var(--border-subtle)]" />
 
-        {/* 디스코드 음성채널 */}
         {process.env.NEXT_PUBLIC_DISCORD_VOICE_URL && (
           <a
             href={process.env.NEXT_PUBLIC_DISCORD_VOICE_URL}
@@ -95,7 +96,7 @@ export function Sidebar() {
           <span>Notion 추가</span>
         </button>
 
-        {/* 회의 모드 토글 */}
+        {/* 회의 모드 */}
         <button
           onClick={toggleMeetingMode}
           className={cn(
@@ -105,29 +106,43 @@ export function Sidebar() {
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-overlay)] hover:text-[var(--text-primary)]'
           )}
         >
-          <span
-            className={cn(
-              'w-2 h-2 rounded-full flex-shrink-0',
-              meetingMode ? 'bg-green-500 animate-pulse' : 'bg-[var(--text-tertiary)]'
-            )}
-          />
+          <span className={cn('w-2 h-2 rounded-full flex-shrink-0', meetingMode ? 'bg-green-500 animate-pulse' : 'bg-[var(--text-tertiary)]')} />
           <span>회의 모드</span>
         </button>
       </nav>
 
-      {/* 하단 설정 링크 */}
+      {/* 설정 */}
       <div className="px-2 py-3 border-t border-[var(--border-subtle)]">
         <Link
           href="/settings"
-          className={cn(
-            'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
-            'text-[var(--text-secondary)] hover:bg-[var(--bg-overlay)] hover:text-[var(--text-primary)]'
-          )}
+          className={cn('flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors', 'text-[var(--text-secondary)] hover:bg-[var(--bg-overlay)] hover:text-[var(--text-primary)]')}
         >
           <span className="text-base">⚙️</span>
           <span>설정</span>
         </Link>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* 데스크톱: 항상 표시 */}
+      <div className="hidden md:flex h-full">{sidebarContent}</div>
+
+      {/* 모바일: drawer */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-50 flex"
+          onClick={() => setSidebarOpen(false)}
+        >
+          {/* 오버레이 */}
+          <div className="absolute inset-0 bg-black/60" />
+          {/* 사이드바 */}
+          <div className="relative z-10 h-full" onClick={(e) => e.stopPropagation()}>
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
