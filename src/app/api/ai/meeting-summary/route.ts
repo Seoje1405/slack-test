@@ -71,8 +71,9 @@ export async function POST(request: Request): Promise<Response> {
   const client = new Anthropic({ apiKey });
   const encoder = new TextEncoder();
 
+  const model = process.env.NEXT_PUBLIC_CLAUDE_MODEL ?? 'claude-haiku-4-5';
   const messageStream = client.messages.stream({
-    model: 'claude-haiku-4-5',
+    model,
     max_tokens: 1024,
     system: [
       { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
