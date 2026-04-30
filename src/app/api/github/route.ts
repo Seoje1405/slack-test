@@ -37,7 +37,10 @@ async function enrichPushEvents(events: RawEvent[], headers: Record<string, stri
     [...unique.entries()].slice(0, 10).map(async ([, evs]) => {
       const repoName = evs[0].repo.name;
       const head = evs[0].payload.head as string;
-      const res = await fetch(`https://api.github.com/repos/${repoName}/commits/${head}`, { headers });
+      const res = await fetch(`https://api.github.com/repos/${repoName}/commits/${head}`, {
+        headers,
+        signal: AbortSignal.timeout(10_000),
+      });
       if (!res.ok) return;
       const data = await res.json();
       const message = (data?.commit?.message as string | undefined);
@@ -72,7 +75,10 @@ export async function GET(request: Request): Promise<Response> {
   try {
     // Fetch notifications (including already-read) from the last 7 days, filtered to configured repos
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const notifPromise = fetch(`https://api.github.com/notifications?all=true&per_page=50&since=${since}`, { headers })
+    const notifPromise = fetch(`https://api.github.com/notifications?all=true&per_page=50&since=${since}`, {
+      headers,
+      signal: AbortSignal.timeout(20_000),
+    })
       .then(async (res) => {
         if (!res.ok) return [];
         const data = await res.json();
@@ -87,7 +93,10 @@ export async function GET(request: Request): Promise<Response> {
     let eventItems: FeedItem[];
 
     if (repos.length === 0) {
-      const res = await fetch('https://api.github.com/user/received_events?per_page=30', { headers });
+      const res = await fetch('https://api.github.com/user/received_events?per_page=30', {
+        headers,
+        signal: AbortSignal.timeout(20_000),
+      });
       if (!res.ok) {
         const text = await res.text();
         return Response.json({ items: [], status: 'error', message: `GitHub API ${res.status}: ${text.slice(0, 200)}` } satisfies FeedResponse);
@@ -99,7 +108,10 @@ export async function GET(request: Request): Promise<Response> {
     } else {
       const results = await Promise.allSettled(
         repos.map((repo) =>
-          fetch(`https://api.github.com/repos/${repo}/events?per_page=20`, { headers }).then(
+          fetch(`https://api.github.com/repos/${repo}/events?per_page=20`, {
+            headers,
+            signal: AbortSignal.timeout(20_000),
+          }).then(
             async (res) => {
               if (!res.ok) throw new Error(`GitHub API ${res.status} for ${repo}`);
               return res.json();

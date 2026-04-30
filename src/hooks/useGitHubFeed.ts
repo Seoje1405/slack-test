@@ -10,9 +10,15 @@ export function useGitHubFeed() {
 
   return useQuery<FeedResponse>({
     queryKey: ['feed', 'github', repos],
-    queryFn: () => fetch(`/api/github${reposParam}`).then((r) => r.json()),
+    queryFn: async () => {
+      const res = await fetch(`/api/github${reposParam}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
     staleTime: 55 * 1000,
     refetchInterval: 60 * 1000,
-    retry: 2,
+    refetchIntervalInBackground: true,
+    retry: 1,
+    retryDelay: 5_000,
   });
 }
