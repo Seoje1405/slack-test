@@ -557,28 +557,92 @@ export const env = schema.parse(process.env)
 
 ```
 app/
-├── (auth)/              # route group — no URL prefix
-│   ├── login/page.tsx
-│   └── register/page.tsx
 ├── (dashboard)/
-│   ├── layout.tsx       # shared authenticated layout
+│   ├── layout.tsx       # Sidebar + Topbar + BottomNav + side panels
 │   └── dashboard/page.tsx
 ├── api/
-│   └── [...]/route.ts   # Route Handlers
-├── proxy.ts             # request interception (replaces middleware.ts)
-├── layout.tsx           # root layout
-└── globals.css
+│   ├── github/route.ts         # Events + Notifications (enrichPushEvents)
+│   ├── notion/route.ts         # Notion DB feed
+│   ├── notion/create/route.ts  # POST — create Notion page
+│   ├── discord/route.ts        # Discord messages
+│   ├── figma/route.ts          # Figma changes
+│   └── refresh/route.ts        # Manual refresh trigger
+├── manifest.ts          # PWA Web App Manifest
+├── layout.tsx           # root layout (viewport, PWA meta, SW script)
+└── globals.css          # CSS vars, --bottom-nav-h, .pb-safe-nav, .h-bottom-nav
 components/
-├── ui/                  # shadcn/ui base components
-└── features/            # feature-specific components
-lib/
-├── auth.ts
-├── db.ts
-└── utils.ts
-actions/                 # Server Actions
+├── features/
+│   ├── FeedGrid.tsx         # grid of FeedPanel cards
+│   ├── FeedPanel.tsx        # single service feed card
+│   ├── StatGrid.tsx         # 4-up stat cards
+│   ├── StatCard.tsx
+│   ├── UnifiedFeedPanel.tsx # unified chronological feed
+│   ├── MeetingPanel.tsx     # right side panel — meeting mode + AI summary
+│   └── NotionAddPanel.tsx   # right side panel — Notion quick page create
+├── layouts/
+│   ├── Sidebar.tsx      # desktop always-visible; mobile overlay drawer
+│   ├── Topbar.tsx       # refresh button + mobile hamburger
+│   └── BottomNav.tsx    # md:hidden fixed bottom tab bar (mobile only)
+└── ui/                  # shadcn/ui base components
 hooks/                   # custom hooks ('use client')
-types/                   # shared TypeScript types
+├── useGitHubFeed.ts
+├── useNotionFeed.ts
+├── useDiscordFeed.ts
+├── useFigmaFeed.ts
+└── useHasHydrated.ts    # SSR hydration guard
+stores/
+└── dashboardStore.ts    # Zustand — activeFilter, viewMode, meetingMode, notionAddMode, sidebarOpen
+lib/
+├── github.ts            # transform helpers, GitHubNotification type
+└── utils.ts
+types/
+└── feed.ts              # ServiceId, ServiceStatus, FeedItem
+public/
+├── sw.js                # Service Worker (cache-first static, network-first nav)
+└── icons/icon.svg
+config/
+└── services.ts          # SERVICES array — id, label, color per service
 ```
+
+---
+
+## Mobile / PWA patterns
+
+- Use `h-[100dvh]` instead of `h-screen` — prevents layout jump on mobile browsers with dynamic toolbars.
+- Apply `pb-safe-nav` to scrollable main content — adds `env(safe-area-inset-bottom)` + `--bottom-nav-h` padding for iOS notch/home bar.
+- `BottomNav` is `md:hidden` — never show it on desktop.
+- `Sidebar` is `hidden md:flex` on desktop; on mobile it renders as a fixed overlay drawer triggered by `sidebarOpen` in `dashboardStore`.
+- `Topbar` hamburger button is `md:hidden` — calls `toggleSidebar`.
+
+---
+
+## Side panel pattern (MeetingPanel / NotionAddPanel)
+
+Both panels share the same interaction model — follow it for any new panel:
+
+- Fixed right-side panel: `fixed top-0 right-0 h-full w-[N]px z-40 border-l flex flex-col`
+- Activated via a boolean in `dashboardStore` (e.g. `meetingMode`, `notionAddMode`)
+- **Mutually exclusive**: opening one closes the other (enforced in `dashboardStore`)
+- Toggled from the left `Sidebar` — button highlights when panel is open
+- On mobile, these panels overlay the content at full width — consider `w-full md:w-[N]px` for new panels
+
+---
+
+## Environment variables (project-specific)
+
+| Variable | Purpose |
+|----------|---------|
+| `GITHUB_TOKEN` | Personal access token (fine-grained, `notifications:read` + `contents:read`) |
+| `GITHUB_REPOS` | Comma-separated `owner/repo` list — e.g. `org/api,org/frontend` |
+| `NOTION_SECRET` | Notion Integration token |
+| `NOTION_DATABASE_ID` | Default database for feed + page creation |
+| `DISCORD_BOT_TOKEN` | Discord bot token |
+| `DISCORD_GUILD_ID` | Target Discord server ID |
+| `FIGMA_TOKEN` | Figma personal access token |
+| `FIGMA_FILE_KEY` | Figma file key (from URL) |
+| `ANTHROPIC_API_KEY` | Claude API key for meeting AI summary |
+| `NEXT_PUBLIC_DISCORD_VOICE_URL` | Discord voice channel invite URL (optional, shows in Sidebar) |
+| `NEXT_PUBLIC_CLAUDE_MODEL` | Override Claude model ID (optional, defaults to claude-3-haiku) |
 
 ---
 
