@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useGitHubFeed } from '@/hooks/useGitHubFeed';
 import { useNotionFeed } from '@/hooks/useNotionFeed';
@@ -28,14 +28,12 @@ export function UnifiedFeedPanel() {
 
   const isLoading = [github, notion, discord, figma].every((q) => q.isPending);
 
-  const allItems = useMemo<FeedItem[]>(() => {
-    return [
-      ...(github.data?.items ?? []),
-      ...(notion.data?.items ?? []),
-      ...(discord.data?.items ?? []),
-      ...(figma.data?.items ?? []),
-    ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-  }, [github.data, notion.data, discord.data, figma.data]);
+  const allItems: FeedItem[] = [
+    ...(github.data?.items ?? []),
+    ...(notion.data?.items ?? []),
+    ...(discord.data?.items ?? []),
+    ...(figma.data?.items ?? []),
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
   const serviceFiltered = serviceFilter
     ? allItems.filter((item) => item.service === serviceFilter)
