@@ -22,6 +22,7 @@ async function fetchUserInfo(
   try {
     const res = await fetch(`https://api.notion.com/v1/users/${userId}`, {
       headers: NOTION_HEADERS(token),
+      signal: AbortSignal.timeout(10_000),
     });
     if (res.ok) {
       const data = await res.json();
@@ -89,6 +90,7 @@ async function fetchAllPages(token: string): Promise<Response> {
       sort: { direction: 'descending', timestamp: 'last_edited_time' },
       page_size: 20,
     }),
+    signal: AbortSignal.timeout(20_000),
   });
 }
 
@@ -100,6 +102,7 @@ async function fetchDatabase(token: string, databaseId: string): Promise<Respons
       sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }],
       page_size: 20,
     }),
+    signal: AbortSignal.timeout(20_000),
   });
 }
 
