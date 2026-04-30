@@ -3,6 +3,7 @@ import { Topbar } from '@/components/layouts/Topbar';
 import { BottomNav } from '@/components/layouts/BottomNav';
 import { MeetingPanel } from '@/components/features/MeetingPanel';
 import { NotionAddPanel } from '@/components/features/NotionAddPanel';
+import { GitHubIssuePanel } from '@/components/features/GitHubIssuePanel';
 
 export default function DashboardLayout({
   children,
@@ -21,6 +22,7 @@ export default function DashboardLayout({
       </div>
       <MeetingPanel />
       <NotionAddPanel />
+      <GitHubIssuePanel />
       <BottomNav />
     </div>
   );
