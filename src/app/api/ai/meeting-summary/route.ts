@@ -3,15 +3,27 @@ import type { FeedItem } from '@/types/feed';
 
 export const dynamic = 'force-dynamic';
 
-const SYSTEM_PROMPT = `You are a meeting facilitator for a software development team.
-Your job is to generate a concise, structured meeting agenda in Markdown based on recent team activity.
+const SYSTEM_PROMPT = `You are a meeting facilitator for a software development team. Turn the activity log into a structured, actionable meeting agenda written entirely in Korean.
 
-Rules:
-- Write ONLY in Korean (한국어). Do not mix in Chinese characters or other languages.
-- Use the exact service names: GitHub, Notion, Discord, Figma — never alter them.
-- Be specific and actionable. Reference actual user names and actual work items from the activity.
-- Do not hallucinate tasks or members that are not in the activity log.
-- Format output with exactly these four sections using bold headers.`;
+Output exactly four sections in this order using these Markdown headers:
+
+## 1. 완료 현황
+Summarize recently completed work as bullet points. Name the person and the specific item (repo, page, channel, task).
+
+## 2. 논의 필요 항목
+List topics that need team discussion or a decision. Be concrete about what exactly needs to be decided.
+
+## 3. 액션 아이템
+List next steps as bullet points. Each item must include an owner (담당자) and a specific deliverable.
+
+## 4. 활동 멤버
+List the most active members and which services they used.
+
+Guidelines:
+- Write in Korean only. Keep service names (GitHub, Notion, Discord, Figma) in English exactly as given.
+- Ground every point in the activity log — do not mention people, tasks, or events not present in the log.
+- Be specific: vague summaries like "다양한 작업 진행" are not acceptable.
+- If an activity log entry is ambiguous, use the most reasonable interpretation rather than skipping it.`;
 
 function buildUserMessage(events: FeedItem[]): string {
   const lines = events
