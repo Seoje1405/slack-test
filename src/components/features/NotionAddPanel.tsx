@@ -196,51 +196,49 @@ export function NotionAddPanel() {
             <label className="text-xs font-medium text-[var(--text-secondary)]">
               내용 <span className="text-[var(--text-muted)]">(선택사항)</span>
             </label>
-            <div className="relative">
-              <textarea
-                ref={textareaRef}
-                value={content}
-                onChange={handleContentChange}
-                onKeyDown={handleContentKeyDown}
-                onBlur={() => setTimeout(() => setSuggestion(null), 150)}
-                placeholder={"# 또는 /로 블록 선택\n내용을 입력하세요"}
-                rows={10}
-                disabled={loading}
-                className="w-full text-sm px-3 py-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border-focus,#555)] disabled:opacity-50 resize-none transition-colors"
-              />
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={handleContentChange}
+              onKeyDown={handleContentKeyDown}
+              onBlur={() => setTimeout(() => setSuggestion(null), 150)}
+              placeholder={"# 또는 /로 블록 선택\n내용을 입력하세요"}
+              rows={10}
+              disabled={loading}
+              className="w-full text-sm px-3 py-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border-focus,#555)] disabled:opacity-50 resize-none transition-colors"
+            />
 
-              {/* 블록 타입 제안 드롭다운 */}
-              {suggestion && (
-                <div className="absolute bottom-full left-0 right-0 mb-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-xl overflow-hidden z-20">
-                  <div className="px-3 py-1.5 border-b border-[var(--border-subtle)]">
-                    <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wide">블록 유형</p>
-                  </div>
-                  {suggestion.options.map((opt, idx) => (
-                    <button
-                      key={opt.syntax}
-                      onMouseDown={(e) => { e.preventDefault(); applyOption(opt, suggestion); }}
-                      className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2 text-left transition-colors',
-                        idx === suggestion.selectedIndex
-                          ? 'bg-[var(--bg-overlay)]'
-                          : 'hover:bg-[var(--bg-overlay)]/60'
-                      )}
-                    >
-                      <span className="text-xs font-bold text-[var(--text-muted)] w-7 text-center shrink-0">
-                        {opt.icon}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-[var(--text-primary)]">{opt.label}</p>
-                        <p className="text-xs text-[var(--text-muted)]">{opt.desc}</p>
-                      </div>
-                      {idx === suggestion.selectedIndex && (
-                        <span className="ml-auto text-[10px] text-[var(--text-muted)] shrink-0">↵ Enter</span>
-                      )}
-                    </button>
-                  ))}
+            {/* 블록 타입 제안 드롭다운 */}
+            {suggestion && (
+              <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-xl overflow-hidden">
+                <div className="px-3 py-1.5 border-b border-[var(--border-subtle)]">
+                  <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wide">블록 유형</p>
                 </div>
-              )}
-            </div>
+                {suggestion.options.map((opt, idx) => (
+                  <button
+                    key={opt.syntax}
+                    onMouseDown={(e) => { e.preventDefault(); applyOption(opt, suggestion); }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-3 py-2 text-left transition-colors',
+                      idx === suggestion.selectedIndex
+                        ? 'bg-[var(--bg-overlay)]'
+                        : 'hover:bg-[var(--bg-overlay)]/60'
+                    )}
+                  >
+                    <span className="text-xs font-bold text-[var(--text-muted)] w-7 text-center shrink-0">
+                      {opt.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{opt.label}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{opt.desc}</p>
+                    </div>
+                    {idx === suggestion.selectedIndex && (
+                      <span className="ml-auto text-[10px] text-[var(--text-muted)] shrink-0">↵ Enter</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
             {/* 명령어 레퍼런스 */}
             <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-2.5 flex flex-col gap-1.5">
               <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-0.5">마크다운 단축키</p>
