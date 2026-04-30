@@ -51,7 +51,7 @@ export function UnifiedFeedPanel() {
 
   const favorites = useFeedAnnotationStore((s) => s.favorites);
 
-  const isLoading = [github, notion, discord, figma].every((q) => q.isPending);
+  const isLoading = [github, notion, discord, figma].some((q) => q.isPending);
 
   const allItems: FeedItem[] = [
     ...(github.data?.items ?? []),
