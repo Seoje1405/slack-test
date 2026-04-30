@@ -60,6 +60,9 @@ export function MeetingPanel() {
         if (done) break;
         setSummary((prev) => prev + decoder.decode(value, { stream: true }));
       }
+      // 버퍼에 남은 멀티바이트 문자 플러시
+      const tail = decoder.decode();
+      if (tail) setSummary((prev) => prev + tail);
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         setError((err as Error).message ?? '알 수 없는 오류');
@@ -135,20 +138,29 @@ export function MeetingPanel() {
   );
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function applyBold(raw: string): string {
+  return escapeHtml(raw).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
 function PanelMarkdown({ content }: { content: string }) {
   const lines = content.split('\n');
   return (
     <div className="text-xs text-[var(--text-primary)] space-y-1 leading-relaxed">
       {lines.map((line, i) => {
         if (line.startsWith('## ') || line.startsWith('### ')) {
-          const text = line
-            .replace(/^#{2,3}\s/, '')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           return (
             <h3
               key={i}
               className="font-semibold text-[var(--text-primary)] mt-3 first:mt-0"
-              dangerouslySetInnerHTML={{ __html: text }}
+              dangerouslySetInnerHTML={{ __html: applyBold(line.replace(/^#{2,3}\s/, '')) }}
             />
           );
         }
@@ -160,13 +172,10 @@ function PanelMarkdown({ content }: { content: string }) {
           );
         }
         if (line.startsWith('- ') || line.startsWith('* ')) {
-          const text = line
-            .replace(/^[-*]\s/, '')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           return (
             <div key={i} className="flex gap-1.5">
               <span className="text-[var(--text-tertiary)] shrink-0">•</span>
-              <span dangerouslySetInnerHTML={{ __html: text }} />
+              <span dangerouslySetInnerHTML={{ __html: applyBold(line.replace(/^[-*]\s/, '')) }} />
             </div>
           );
         }
@@ -178,8 +187,7 @@ function PanelMarkdown({ content }: { content: string }) {
           );
         }
         if (line.trim() === '') return <div key={i} className="h-1" />;
-        const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        return <p key={i} dangerouslySetInnerHTML={{ __html: bold }} />;
+        return <p key={i} dangerouslySetInnerHTML={{ __html: applyBold(line) }} />;
       })}
     </div>
   );
