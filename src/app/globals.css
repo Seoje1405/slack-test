@@ -40,6 +40,9 @@
 }
 
 :root {
+  /* 모바일 레이아웃 */
+  --bottom-nav-h: 56px;
+
   /* 다크 테마 기본값 */
   --bg-base: #0a0a0f;
   --bg-surface: #111118;
@@ -104,6 +107,15 @@
   html {
     @apply font-sans;
   }
+}
+
+/* 모바일 safe-area 대응 */
+.pb-safe-nav {
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+}
+
+.h-bottom-nav {
+  height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
 }
 
 /* 스켈레톤 shimmer 애니메이션 */
