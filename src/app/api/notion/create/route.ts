@@ -19,18 +19,47 @@ async function getTitlePropertyName(token: string, databaseId: string): Promise<
 }
 
 function buildContentBlocks(content: string) {
-  return content
-    .split('\n')
-    .map((line) => line.slice(0, 2000))
-    .map((line) => ({
-      object: 'block',
-      type: 'paragraph',
-      paragraph: {
-        rich_text: line
-          ? [{ type: 'text', text: { content: line } }]
-          : [],
-      },
-    }));
+  const lines = content.split('\n');
+  const blocks: object[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i].slice(0, 2000);
+
+    if (line.startsWith('### ')) {
+      blocks.push({ object: 'block', type: 'heading_3', heading_3: { rich_text: [{ type: 'text', text: { content: line.slice(4) } }] } });
+    } else if (line.startsWith('## ')) {
+      blocks.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: [{ type: 'text', text: { content: line.slice(3) } }] } });
+    } else if (line.startsWith('# ')) {
+      blocks.push({ object: 'block', type: 'heading_1', heading_1: { rich_text: [{ type: 'text', text: { content: line.slice(2) } }] } });
+    } else if (line.startsWith('- [ ] ') || line.startsWith('- [x] ') || line.startsWith('- [X] ')) {
+      const checked = !line.startsWith('- [ ] ');
+      blocks.push({ object: 'block', type: 'to_do', to_do: { rich_text: [{ type: 'text', text: { content: line.slice(6) } }], checked } });
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      blocks.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: [{ type: 'text', text: { content: line.slice(2) } }] } });
+    } else if (/^\d+\. /.test(line)) {
+      blocks.push({ object: 'block', type: 'numbered_list_item', numbered_list_item: { rich_text: [{ type: 'text', text: { content: line.replace(/^\d+\. /, '') } }] } });
+    } else if (line.startsWith('> ')) {
+      blocks.push({ object: 'block', type: 'quote', quote: { rich_text: [{ type: 'text', text: { content: line.slice(2) } }] } });
+    } else if (line.trim() === '---') {
+      blocks.push({ object: 'block', type: 'divider', divider: {} });
+    } else if (line.startsWith('```')) {
+      const lang = line.slice(3).trim() || 'plain text';
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      blocks.push({ object: 'block', type: 'code', code: { rich_text: [{ type: 'text', text: { content: codeLines.join('\n').slice(0, 2000) } }], language: lang } });
+    } else {
+      blocks.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: line ? [{ type: 'text', text: { content: line } }] : [] } });
+    }
+
+    i++;
+  }
+
+  return blocks;
 }
 
 export async function POST(request: NextRequest) {
